@@ -10,7 +10,8 @@
       "files": ["src/components/ui/**", "src/hooks/use-mobile.ts"],
       "rules": {
         "react/only-export-components": "off",
-        "react/set-state-in-effect": "off"
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-deps": "off"
       }
     }
   ]

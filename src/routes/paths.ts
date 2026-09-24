@@ -6,6 +6,7 @@ export const ROUTES = {
   login: '/login',
   dashboard: '/dashboard',
   users: '/users',
+  stores: '/stores',
 } as const
 
 /** Location state set by `ProtectedRoute` when it bounces a signed-out user to the login page. */

@@ -1,5 +1,5 @@
 import { UserPlusIcon } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useAppSelector } from '@/app/hooks'
 import { DataTable } from '@/components/common/data-table/DataTable'
@@ -7,8 +7,11 @@ import { DataTableEmptyState } from '@/components/common/data-table/DataTableEmp
 import { ErrorState } from '@/components/common/ErrorState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { selectCurrentUser } from '@/features/auth/authSlice'
+import { useHotkey } from '@/hooks/use-hotkey'
 import { useIsBelowTablet } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import { UserActionDialogs } from '../components/UserActionDialogs'
@@ -16,7 +19,7 @@ import { UserCardList } from '../components/UserCardList'
 import { getUserColumns } from '../components/userColumns'
 import { UserFormDialog, type UserFormTarget } from '../components/UserFormDialog'
 import { UserToolbar } from '../components/UserToolbar'
-import { DEFAULT_USER_FILTERS, DEFAULT_USERS_PAGE_SIZE } from '../users.constants'
+import { DEFAULT_USER_FILTERS, DEFAULT_USERS_PAGE_SIZE, USER_SHORTCUTS } from '../users.constants'
 import type { User, UserAction, UserFilterValues, UserListView, UsersQueryFilters } from '../users.types'
 import { countActiveFilters } from '../users.utils'
 import { useGetUsersQuery } from '../usersApi'
@@ -61,6 +64,19 @@ export default function UsersPage() {
     setIsFormOpen(true)
   }, [])
 
+  // Shortcuts act on the list, so they pause while a dialog is open over it.
+  const searchRef = useRef<HTMLInputElement>(null)
+  const shortcutsEnabled = !isFormOpen && !isActionOpen
+  useHotkey(USER_SHORTCUTS.addUser, () => openForm({ mode: 'create' }), { enabled: shortcutsEnabled })
+  useHotkey(
+    USER_SHORTCUTS.search,
+    () => {
+      searchRef.current?.focus()
+      searchRef.current?.select()
+    },
+    { enabled: shortcutsEnabled },
+  )
+
   const handleAction = useCallback(
     (action: UserAction) => {
       if (action.type === 'edit') {
@@ -74,8 +90,8 @@ export default function UsersPage() {
   )
 
   const columns = useMemo(
-    () => getUserColumns({ view, currentUserId, onAction: handleAction }),
-    [view, currentUserId, handleAction],
+    () => getUserColumns({ view, role: filters.role, currentUserId, onAction: handleAction }),
+    [view, filters.role, currentUserId, handleAction],
   )
 
   const applySearch = (next: string) => {
@@ -96,10 +112,17 @@ export default function UsersPage() {
   const isFiltered = search !== '' || countActiveFilters(filters, view) > 0
 
   const addUserButton = (
-    <Button onClick={() => openForm({ mode: 'create' })}>
-      <UserPlusIcon />
-      Add user
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button onClick={() => openForm({ mode: 'create' })} aria-keyshortcuts={USER_SHORTCUTS.addUser}>
+          <UserPlusIcon />
+          Add user
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        Add user <Kbd>{USER_SHORTCUTS.addUser}</Kbd>
+      </TooltipContent>
+    </Tooltip>
   )
 
   const emptyState = isFiltered ? (
@@ -150,6 +173,7 @@ export default function UsersPage() {
             onSearch={applySearch}
             filters={filters}
             onFiltersChange={applyFilters}
+            searchRef={searchRef}
           />
 
           {isBelowTablet ? (

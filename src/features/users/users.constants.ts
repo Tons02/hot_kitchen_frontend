@@ -47,12 +47,21 @@ export const PROOF_OF_LICENSE_TYPES = [...PROFILE_PICTURE_TYPES, 'application/pd
 /** Philippine mobile numbers: the API expects +63 followed by 10 digits. */
 export const MOBILE_PREFIX = '+63'
 
+/** The list starts on active accounts (`is_deactivated=0`); pick "All statuses" to include deactivated ones. */
 export const DEFAULT_USER_FILTERS: UserFilterValues = {
   role: 'all',
   storeId: 'all',
-  status: 'all',
+  status: 'active',
 }
 
+/** Keyboard shortcuts on the Users page, also shown in the UI as hints. */
+export const USER_SHORTCUTS = {
+  addUser: 'Alt+A',
+  search: 'Alt+S',
+} as const
+
 export const DEFAULT_USERS_PAGE_SIZE = 10
-/** Page size for the mobile card list, which loads more as you scroll. */
-export const USERS_INFINITE_PAGE_SIZE = 10
+/** The mobile card list's first `per_page`, and how much it grows each time the end scrolls into view. */
+export const USERS_CARD_LIST_STEP = 10
+/** The API's `per_page` limit (api-tool-kit's max_pagination_limit), so the card list stops growing here. */
+export const USERS_MAX_PAGE_SIZE = 100

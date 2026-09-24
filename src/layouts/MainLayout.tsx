@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { OfflineBanner } from '@/components/layout/OfflineBanner'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 export function MainLayout() {
@@ -13,6 +14,7 @@ export function MainLayout() {
       */}
       <SidebarInset className="h-svh overflow-hidden">
         <AppHeader />
+        <OfflineBanner />
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 md:p-6">
           <Outlet />
         </div>

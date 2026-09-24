@@ -8,6 +8,8 @@ import { baseQueryWithAuth } from './baseQuery'
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithAuth,
+  // After the connection drops and comes back, lists and records on screen reload themselves.
+  refetchOnReconnect: true,
   tagTypes: ['Users', 'Stores', 'StoreInventories', 'ProductCategories', 'Products'],
   endpoints: () => ({}),
 })

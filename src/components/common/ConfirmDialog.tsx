@@ -30,6 +30,8 @@ interface ConfirmDialogProps {
   isLoading?: boolean
   /** The caller closes the dialog (via `onOpenChange`) once the action succeeds. */
   onConfirm: () => void
+  /** Extra content under the description, e.g. a list of what's about to change. */
+  children?: ReactNode
 }
 
 /** A yes/no confirmation in the standard modal layout (see Modal.tsx). */
@@ -43,6 +45,7 @@ export function ConfirmDialog({
   variant = 'default',
   isLoading = false,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => !isLoading && onOpenChange(next)}>
@@ -53,9 +56,10 @@ export function ConfirmDialog({
         <AlertDialogHeader className={cn(MODAL_HEADER_CLASS, 'place-items-start')}>
           <AlertDialogTitle className={MODAL_TITLE_CLASS}>{title}</AlertDialogTitle>
         </AlertDialogHeader>
-        {description && (
-          <div className={MODAL_BODY_CLASS}>
-            <AlertDialogDescription>{description}</AlertDialogDescription>
+        {(description || children) && (
+          <div className={cn(MODAL_BODY_CLASS, 'flex flex-col gap-4')}>
+            {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
+            {children}
           </div>
         )}
         <AlertDialogFooter className={MODAL_FOOTER_CLASS}>

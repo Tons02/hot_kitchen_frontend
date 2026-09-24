@@ -1,5 +1,5 @@
 import { FilterXIcon, SlidersHorizontalIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type Ref } from 'react'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SelectInput, type SelectOption } from '@/components/common/SelectInput'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useStoreOptions } from '@/features/stores/hooks/useStoreOptions'
-import { DEFAULT_USER_FILTERS, ROLE_LABELS, STAFF_ROLES } from '../users.constants'
+import { DEFAULT_USER_FILTERS, ROLE_LABELS, STAFF_ROLES, USER_SHORTCUTS } from '../users.constants'
 import type { UserFilterValues, UserListView } from '../users.types'
 import { countActiveFilters } from '../users.utils'
 
@@ -31,10 +31,12 @@ interface UserToolbarProps {
   onSearch: (search: string) => void
   filters: UserFilterValues
   onFiltersChange: (filters: UserFilterValues) => void
+  /** Lets the page focus the search box from its keyboard shortcut. */
+  searchRef?: Ref<HTMLInputElement>
 }
 
 /** Search (on Enter) and a filter popover whose choices only apply when you press Apply. */
-export function UserToolbar({ view, search, onSearch, filters, onFiltersChange }: UserToolbarProps) {
+export function UserToolbar({ view, search, onSearch, filters, onFiltersChange, searchRef }: UserToolbarProps) {
   const { options: storeOptions } = useStoreOptions()
   const [isOpen, setIsOpen] = useState(false)
   const [draft, setDraft] = useState(filters)
@@ -60,6 +62,8 @@ export function UserToolbar({ view, search, onSearch, filters, onFiltersChange }
         onSearch={onSearch}
         placeholder="Search name, username, email or mobile, then press Enter"
         label="Search users"
+        shortcut={USER_SHORTCUTS.search}
+        ref={searchRef}
         className="sm:max-w-md"
       />
       <div className="flex items-center gap-2">

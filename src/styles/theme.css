@@ -156,3 +156,26 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.669 0.188 37.3);
 }
+
+/*
+ * Toasts (sonner with `richColors`): status colors come from the tokens above, so they follow
+ * light/dark automatically. Background is a light tint over the popover, and text mixes the
+ * status color with the foreground to keep AA contrast. `:root` outranks sonner's own palette.
+ */
+:root [data-sonner-toaster][data-sonner-theme] {
+  --success-bg: color-mix(in oklch, var(--success) 12%, var(--popover));
+  --success-border: color-mix(in oklch, var(--success) 45%, var(--popover));
+  --success-text: color-mix(in oklch, var(--success) 55%, var(--foreground));
+
+  --error-bg: color-mix(in oklch, var(--destructive) 12%, var(--popover));
+  --error-border: color-mix(in oklch, var(--destructive) 45%, var(--popover));
+  --error-text: color-mix(in oklch, var(--destructive) 55%, var(--foreground));
+
+  --warning-bg: color-mix(in oklch, var(--warning) 15%, var(--popover));
+  --warning-border: color-mix(in oklch, var(--warning) 50%, var(--popover));
+  --warning-text: color-mix(in oklch, var(--warning) 55%, var(--foreground));
+
+  --info-bg: color-mix(in oklch, var(--secondary-foreground) 10%, var(--popover));
+  --info-border: color-mix(in oklch, var(--secondary-foreground) 40%, var(--popover));
+  --info-text: color-mix(in oklch, var(--secondary-foreground) 55%, var(--foreground));
+}

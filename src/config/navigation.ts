@@ -1,4 +1,4 @@
-import { LayoutDashboardIcon, UsersIcon, type LucideIcon } from 'lucide-react'
+import { LayoutDashboardIcon, StoreIcon, UsersIcon, type LucideIcon } from 'lucide-react'
 import type { Role } from '@/features/users/users.types'
 import { ROUTES } from '@/routes/paths'
 
@@ -18,6 +18,9 @@ export interface NavGroup {
 /** Who can open User Management. Shared by the sidebar item and the route guard. */
 export const USER_MANAGEMENT_ROLES: readonly Role[] = ['admin']
 
+/** Who can open Store Management. Shared by the sidebar item and the route guard. */
+export const STORE_MANAGEMENT_ROLES: readonly Role[] = ['admin']
+
 /** Sidebar navigation. Add an entry here when a feature adds a top-level page. */
 export const navigation: NavGroup[] = [
   {
@@ -27,5 +30,9 @@ export const navigation: NavGroup[] = [
   {
     label: 'Management',
     items: [{ title: 'Users', to: ROUTES.users, icon: UsersIcon, roles: USER_MANAGEMENT_ROLES }],
+  },
+  {
+    label: 'Store Management',
+    items: [{ title: 'Stores', to: ROUTES.stores, icon: StoreIcon, roles: STORE_MANAGEMENT_ROLES }],
   },
 ]

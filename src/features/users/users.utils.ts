@@ -1,4 +1,4 @@
-import { MOBILE_PREFIX, ROLE_LABELS, STAFF_ROLES, STORE_BOUND_ROLES } from './users.constants'
+import { DEFAULT_USER_FILTERS, MOBILE_PREFIX, ROLE_LABELS, STAFF_ROLES, STORE_BOUND_ROLES } from './users.constants'
 import type { UserFormValues } from './users.schemas'
 import type {
   Gender,
@@ -40,9 +40,9 @@ export function getUserStatus(user: Pick<User, 'is_deactivated'>, view: UserList
   return user.is_deactivated ? 'deactivated' : 'active'
 }
 
-/** How many of the popover's filters are set, for the badge on the Filters button. */
+/** How many of the popover's filters differ from the defaults, for the badge on the Filters button. */
 export function countActiveFilters(filters: UserFilterValues, view: UserListView): number {
-  const statusApplies = view === 'current' && filters.status !== 'all'
+  const statusApplies = view === 'current' && filters.status !== DEFAULT_USER_FILTERS.status
   return [filters.role !== 'all', filters.storeId !== 'all', statusApplies].filter(Boolean).length
 }
 

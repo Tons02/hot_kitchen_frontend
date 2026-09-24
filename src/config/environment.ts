@@ -14,7 +14,10 @@ function requireEnv(name: string, value: string | undefined): string {
 }
 
 export const environment = {
-  apiUrl: requireEnv('VITE_API_URL', import.meta.env.VITE_API_URL).replace(/\/+$/, ''),
+  apiUrl: requireEnv(
+    'VITE_HOTKITCHEN_BACKEND_ENDPOINT',
+    import.meta.env.VITE_HOTKITCHEN_BACKEND_ENDPOINT,
+  ).replace(/\/+$/, ''),
   appName: import.meta.env.VITE_APP_NAME || 'Hot Kitchen',
   /** Public path the app is served from (Vite's `base`), always ending in `/`. */
   baseUrl: import.meta.env.BASE_URL,

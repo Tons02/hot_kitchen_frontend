@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($p = \\(Resolve-Path 'src/features/stores/components/StoreForm.tsx'\\).Path; $lines = [IO.File]::ReadAllLines\\($p\\); for \\($i = 121; $i -le 280; $i++\\) { if \\($lines[$i] -ne ''\\) { $lines[$i] = '  ' + $lines[$i] } }; [IO.File]::WriteAllText\\($p, \\($lines -join \"`n\"\\) + \"`n\", \\(New-Object Text.UTF8Encoding $false\\)\\); npx prettier --check $p 2>&1 | Select-Object -Last 2)",
+      "PowerShell(npx shadcn@latest add \"https://diceui.com/r/sortable.json\" --yes 2>&1)"
+    ]
+  }
+}

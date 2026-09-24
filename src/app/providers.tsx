@@ -18,7 +18,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       >
         <TooltipProvider>
           {children}
-          <Toaster position="top-right" closeButton />
+          <Toaster position="bottom-right" richColors closeButton />
         </TooltipProvider>
       </ThemeProvider>
     </ReduxProvider>

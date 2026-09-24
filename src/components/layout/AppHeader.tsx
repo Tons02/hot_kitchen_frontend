@@ -2,6 +2,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { AppBreadcrumb } from './AppBreadcrumb'
+import { NetworkStatus } from './NetworkStatus'
 
 export function AppHeader() {
   return (
@@ -10,6 +11,7 @@ export function AppHeader() {
       <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
       <AppBreadcrumb />
       <div className="ml-auto flex items-center gap-2">
+        <NetworkStatus />
         <ThemeToggle />
       </div>
     </header>

@@ -18,7 +18,7 @@ export const store = configureStore({
       .concat(apiSlice.middleware, apiErrorMiddleware),
 })
 
-// Enables `refetchOnFocus` / `refetchOnReconnect` for queries that opt in.
+// Powers `refetchOnFocus` / `refetchOnReconnect` (on for every query in apiSlice).
 setupListeners(store.dispatch)
 
 export type RootState = ReturnType<typeof rootReducer>

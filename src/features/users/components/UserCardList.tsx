@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { DataTableLoadingState } from '@/components/common/data-table/DataTableLoadingState'
 import { ErrorState } from '@/components/common/ErrorState'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { USERS_CARD_LIST_STEP, USERS_MAX_PAGE_SIZE } from '../users.constants'
 import type { User, UserAction, UsersQueryFilters } from '../users.types'
 import { getFullName, getRoleLabel, getUserStatus } from '../users.utils'
-import { useGetUserPagesInfiniteQuery } from '../usersApi'
+import { useGetUsersQuery } from '../usersApi'
 import { UserRowActions } from './UserRowActions'
 import { UserStatusBadge } from './UserStatusBadge'
 
@@ -19,30 +20,48 @@ interface UserCardListProps {
   emptyState: ReactNode
 }
 
-/** The phone layout: one card per user, loading the next page as the end of the list scrolls into view. */
+/**
+ * The phone layout: one card per user. It always asks for page 1 and adds USERS_CARD_LIST_STEP to
+ * `per_page` whenever the end of the list scrolls into view, until it has the response's `total`.
+ */
 export function UserCardList({ filters, currentUserId, onAction, emptyState }: UserCardListProps) {
-  // Refetch on every visit: profile picture links are signed and expire after a few minutes.
-  const { data, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useGetUserPagesInfiniteQuery(filters, { refetchOnMountOrArgChange: true })
+  const [growth, setGrowth] = useState({ filters, perPage: USERS_CARD_LIST_STEP })
+  // New search or filters start again from the first step.
+  if (growth.filters !== filters) setGrowth({ filters, perPage: USERS_CARD_LIST_STEP })
+  const { perPage } = growth
 
-  const users = useMemo(() => data?.pages.flatMap((page) => page.items) ?? NO_USERS, [data])
-  const total = data?.pages[0]?.total ?? 0
+  // Refetch on every visit: profile picture links are signed and expire after a few minutes.
+  // While a bigger per_page loads, `data` keeps the previous result so the cards stay on screen.
+  const { data, isLoading, isFetching, isError, error, refetch } = useGetUsersQuery(
+    { ...filters, page: 1, perPage },
+    { refetchOnMountOrArgChange: true },
+  )
+
+  const users = data?.items ?? NO_USERS
+  const total = data?.total ?? 0
+  // The API caps per_page, so the list can't grow past USERS_MAX_PAGE_SIZE.
+  const hasMore = users.length < total && perPage < USERS_MAX_PAGE_SIZE
+  const isLoadingMore = isFetching && perPage > users.length
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const sentinel = sentinelRef.current
-    if (!sentinel || !hasNextPage || isFetchingNextPage) return
+    if (!sentinel || !hasMore || isFetching) return
 
     // Starts loading a little before the end so scrolling rarely has to wait.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) void fetchNextPage()
+        if (!entry?.isIntersecting) return
+        setGrowth((current) => ({
+          ...current,
+          perPage: Math.min(current.perPage + USERS_CARD_LIST_STEP, USERS_MAX_PAGE_SIZE),
+        }))
       },
       { rootMargin: '240px 0px' },
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasMore, isFetching])
 
   if (isLoading) {
     return (
@@ -102,10 +121,14 @@ export function UserCardList({ filters, currentUserId, onAction, emptyState }: U
       </ul>
 
       <div ref={sentinelRef} aria-hidden="true" />
-      {isFetchingNextPage && <DataTableLoadingState label="Loading more users…" />}
-      {!hasNextPage && (
+      {isLoadingMore && <DataTableLoadingState label="Loading more users…" />}
+      {!hasMore && !isLoadingMore && (
         <p className="py-2 text-center text-sm text-muted-foreground">
-          {total === 1 ? 'Showing the only user.' : `Showing all ${total} users.`}
+          {users.length < total
+            ? `Showing the first ${users.length} of ${total} users. Search or filter to narrow the list.`
+            : total === 1
+              ? 'Showing the only user.'
+              : `Showing all ${total} users.`}
         </p>
       )}
     </div>

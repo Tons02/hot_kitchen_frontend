@@ -1,11 +1,12 @@
 import { SearchIcon, XIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type Ref } from 'react'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import { Kbd } from '@/components/ui/kbd'
 import { cn } from '@/lib/utils'
 
 interface SearchInputProps {
@@ -16,11 +17,22 @@ interface SearchInputProps {
   placeholder?: string
   /** Accessible name; defaults to the placeholder. */
   label?: string
+  /** Keyboard shortcut that focuses the box (wired up by the page), shown as a hint from tablet up. */
+  shortcut?: string
+  ref?: Ref<HTMLInputElement>
   className?: string
 }
 
 /** A search box that searches on Enter, so every keystroke doesn't hit the API. */
-export function SearchInput({ value, onSearch, placeholder = 'Search', label, className }: SearchInputProps) {
+export function SearchInput({
+  value,
+  onSearch,
+  placeholder = 'Search',
+  label,
+  shortcut,
+  ref,
+  className,
+}: SearchInputProps) {
   const [draft, setDraft] = useState(value)
   const [appliedValue, setAppliedValue] = useState(value)
 
@@ -49,7 +61,9 @@ export function SearchInput({ value, onSearch, placeholder = 'Search', label, cl
           <SearchIcon />
         </InputGroupAddon>
         <InputGroupInput
+          ref={ref}
           type="search"
+          aria-keyshortcuts={shortcut}
           value={draft}
           placeholder={placeholder}
           aria-label={label ?? placeholder}
@@ -62,12 +76,18 @@ export function SearchInput({ value, onSearch, placeholder = 'Search', label, cl
             }
           }}
         />
-        {draft && (
+        {draft ? (
           <InputGroupAddon align="inline-end">
             <InputGroupButton size="icon-xs" aria-label="Clear search" onClick={clear}>
               <XIcon />
             </InputGroupButton>
           </InputGroupAddon>
+        ) : (
+          shortcut && (
+            <InputGroupAddon align="inline-end" className="hidden md:flex" aria-hidden="true">
+              <Kbd>{shortcut}</Kbd>
+            </InputGroupAddon>
+          )
         )}
       </InputGroup>
     </form>
