@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { useSingleFlight } from '@/hooks/use-single-flight'
 import { toastInlineApiError } from '@/services/api/apiErrorMiddleware'
 import type { UserAction } from '../users.types'
 import { getFullName } from '../users.utils'
@@ -21,7 +22,8 @@ export function UserActionDialogs({ action, open, onOpenChange }: UserActionDial
   const user = action?.user
   const name = user ? getFullName(user) : ''
 
-  const run = async (mutation: () => Promise<unknown>, successMessage: string) => {
+  // Ignores a second click that lands before the button has re-rendered as disabled.
+  const run = useSingleFlight(async (mutation: () => Promise<unknown>, successMessage: string) => {
     try {
       await mutation()
       toast.success(successMessage)
@@ -29,7 +31,7 @@ export function UserActionDialogs({ action, open, onOpenChange }: UserActionDial
     } catch (error) {
       toastInlineApiError(error)
     }
-  }
+  })
 
   return (
     <>

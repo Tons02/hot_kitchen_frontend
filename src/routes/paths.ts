@@ -6,8 +6,6 @@ export const ROUTES = {
   login: '/login',
   dashboard: '/dashboard',
   users: '/users',
-  userCreate: '/users/new',
-  userEdit: (userId: number | string) => `/users/${userId}/edit`,
 } as const
 
 /** Location state set by `ProtectedRoute` when it bounces a signed-out user to the login page. */

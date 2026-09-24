@@ -1,4 +1,5 @@
 import { SearchIcon, XIcon } from 'lucide-react'
+import { useState } from 'react'
 import {
   InputGroup,
   InputGroupAddon,
@@ -8,34 +9,67 @@ import {
 import { cn } from '@/lib/utils'
 
 interface SearchInputProps {
+  /** The search that's currently applied. Typing edits a draft until Enter is pressed. */
   value: string
-  onChange: (value: string) => void
+  /** Called on Enter, and with '' when the search is cleared. */
+  onSearch: (value: string) => void
   placeholder?: string
   /** Accessible name; defaults to the placeholder. */
   label?: string
   className?: string
 }
 
-export function SearchInput({ value, onChange, placeholder = 'Search', label, className }: SearchInputProps) {
+/** A search box that searches on Enter, so every keystroke doesn't hit the API. */
+export function SearchInput({ value, onSearch, placeholder = 'Search', label, className }: SearchInputProps) {
+  const [draft, setDraft] = useState(value)
+  const [appliedValue, setAppliedValue] = useState(value)
+
+  // Follow the applied search when it changes from outside (e.g. switching tabs resets it).
+  if (value !== appliedValue) {
+    setAppliedValue(value)
+    setDraft(value)
+  }
+
+  const clear = () => {
+    setDraft('')
+    onSearch('')
+  }
+
   return (
-    <InputGroup className={cn('w-full', className)}>
-      <InputGroupAddon>
-        <SearchIcon />
-      </InputGroupAddon>
-      <InputGroupInput
-        type="search"
-        value={value}
-        placeholder={placeholder}
-        aria-label={label ?? placeholder}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      {value && (
-        <InputGroupAddon align="inline-end">
-          <InputGroupButton size="icon-xs" aria-label="Clear search" onClick={() => onChange('')}>
-            <XIcon />
-          </InputGroupButton>
+    <form
+      role="search"
+      className={cn('w-full', className)}
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSearch(draft.trim())
+      }}
+    >
+      <InputGroup>
+        <InputGroupAddon>
+          <SearchIcon />
         </InputGroupAddon>
-      )}
-    </InputGroup>
+        <InputGroupInput
+          type="search"
+          value={draft}
+          placeholder={placeholder}
+          aria-label={label ?? placeholder}
+          enterKeyHint="search"
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && draft) {
+              event.preventDefault()
+              clear()
+            }
+          }}
+        />
+        {draft && (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton size="icon-xs" aria-label="Clear search" onClick={clear}>
+              <XIcon />
+            </InputGroupButton>
+          </InputGroupAddon>
+        )}
+      </InputGroup>
+    </form>
   )
 }

@@ -8,6 +8,7 @@ import type {
   UserFilterValues,
   UserListView,
   UserPayload,
+  UsersQueryArgs,
   UserStatus,
   VehicleType,
 } from './users.types'
@@ -39,44 +40,28 @@ export function getUserStatus(user: Pick<User, 'is_deactivated'>, view: UserList
   return user.is_deactivated ? 'deactivated' : 'active'
 }
 
-/** Matches every word of the query against the user's names, username, email, mobile and store. */
-export function matchesUserSearch(user: User, query: string): boolean {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  if (terms.length === 0) return true
-
-  const haystack = [
-    user.first_name,
-    user.middle_name,
-    user.last_name,
-    user.suffix,
-    user.username,
-    user.email,
-    user.mobile_number,
-    user.store?.name,
-    user.store?.code,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-
-  return terms.every((term) => haystack.includes(term))
+/** How many of the popover's filters are set, for the badge on the Filters button. */
+export function countActiveFilters(filters: UserFilterValues, view: UserListView): number {
+  const statusApplies = view === 'current' && filters.status !== 'all'
+  return [filters.role !== 'all', filters.storeId !== 'all', statusApplies].filter(Boolean).length
 }
 
-export function filterUsers(users: User[], filters: UserFilterValues, view: UserListView): User[] {
-  return users.filter(
-    (user) =>
-      matchesUserSearch(user, filters.search) &&
-      (filters.role === 'all' || user.role === filters.role) &&
-      (filters.storeId === 'all' || String(user.store_id) === filters.storeId) &&
-      // Everyone in the archived view is archived, so the status filter only applies to current users.
-      (view === 'archived' || filters.status === 'all' || getUserStatus(user, view) === filters.status),
-  )
-}
+/**
+ * Query params for `GET /users`. Filters map to UserFilter::$allowedFilters, `search` to its
+ * $columnSearch. `pagination` is left out, which makes the API return a paginator with totals.
+ */
+export function toUsersParams({ view, search, role, storeId, status, page, perPage }: UsersQueryArgs) {
+  const params: Record<string, string | number> = { page, per_page: perPage }
+  const term = search.trim()
 
-export function hasActiveFilters(filters: UserFilterValues): boolean {
-  return (
-    filters.search.trim() !== '' || filters.role !== 'all' || filters.storeId !== 'all' || filters.status !== 'all'
-  )
+  if (term) params.search = term
+  if (role !== 'all') params.role = role
+  if (storeId !== 'all') params.store_id = storeId
+  if (view === 'archived') params.status = 'inactive'
+  // Everyone in the archived view is archived, so the status filter only applies to current users.
+  else if (status !== 'all') params.is_deactivated = status === 'deactivated' ? 1 : 0
+
+  return params
 }
 
 function stripMobilePrefix(mobileNumber: string): string {

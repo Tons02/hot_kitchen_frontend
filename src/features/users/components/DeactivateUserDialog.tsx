@@ -4,18 +4,12 @@ import { toast } from 'sonner'
 import { FormErrorAlert } from '@/components/common/FormErrorAlert'
 import { FormField } from '@/components/common/FormField'
 import { LoadingButton } from '@/components/common/LoadingButton'
+import { ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/common/Modal'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogClose } from '@/components/ui/dialog'
 import { FieldGroup } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
+import { useSingleFlight } from '@/hooks/use-single-flight'
 import { applyServerErrors } from '@/lib/form'
 import { deactivateUserSchema, type DeactivateUserFormValues } from '../users.schemas'
 import type { User } from '../users.types'
@@ -31,10 +25,10 @@ interface DeactivateUserDialogProps {
 export function DeactivateUserDialog({ user, open, onOpenChange }: DeactivateUserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <ModalContent className="sm:max-w-md">
         {/* Keyed so the reason field starts empty for each user. */}
         {user && <DeactivateUserForm key={user.id} user={user} onDone={() => onOpenChange(false)} />}
-      </DialogContent>
+      </ModalContent>
     </Dialog>
   )
 }
@@ -49,7 +43,8 @@ function DeactivateUserForm({ user, onDone }: { user: User; onDone: () => void }
   })
   const { isSubmitting, errors } = form.formState
 
-  const submit = async (values: DeactivateUserFormValues) => {
+  // Ignores a second click that lands before the button has re-rendered as disabled.
+  const submit = useSingleFlight(async (values: DeactivateUserFormValues) => {
     try {
       await deactivateUser({ id: user.id, deactivate_reason: values.deactivate_reason }).unwrap()
       toast.success(`${name} was deactivated.`)
@@ -57,26 +52,26 @@ function DeactivateUserForm({ user, onDone }: { user: User; onDone: () => void }
     } catch (error) {
       applyServerErrors(error, form.setError)
     }
-  }
+  })
 
   return (
-    <form onSubmit={form.handleSubmit(submit)} noValidate className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>Deactivate {name}?</DialogTitle>
-        <DialogDescription>
-          Their account is marked as deactivated until you reactivate it. The reason is kept on their record.
-        </DialogDescription>
-      </DialogHeader>
-      <FieldGroup>
-        <FormErrorAlert title="Couldn't deactivate this user" message={errors.root?.server?.message} />
-        <FormField
-          control={form.control}
-          name="deactivate_reason"
-          label="Reason"
-          render={(field) => <Textarea {...field} rows={3} placeholder="For example: resigned, end of contract" />}
-        />
-      </FieldGroup>
-      <DialogFooter>
+    <form onSubmit={form.handleSubmit(submit)} noValidate className="flex min-h-0 flex-1 flex-col">
+      <ModalHeader
+        title={`Deactivate ${name}?`}
+        description="Their account is marked as deactivated until you reactivate it. The reason is kept on their record."
+      />
+      <ModalBody>
+        <FieldGroup>
+          <FormErrorAlert title="Couldn't deactivate this user" message={errors.root?.server?.message} />
+          <FormField
+            control={form.control}
+            name="deactivate_reason"
+            label="Reason"
+            render={(field) => <Textarea {...field} rows={3} placeholder="For example: resigned, end of contract" />}
+          />
+        </FieldGroup>
+      </ModalBody>
+      <ModalFooter>
         <DialogClose asChild>
           <Button variant="outline" disabled={isSubmitting}>
             Cancel
@@ -85,7 +80,7 @@ function DeactivateUserForm({ user, onDone }: { user: User; onDone: () => void }
         <LoadingButton type="submit" variant="destructive" isLoading={isSubmitting}>
           Deactivate
         </LoadingButton>
-      </DialogFooter>
+      </ModalFooter>
     </form>
   )
 }

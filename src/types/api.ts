@@ -23,6 +23,21 @@ export interface LaravelValidationErrorBody {
   errors: Record<string, string[]>
 }
 
+/** A paginated Resource collection (`Resource::collection($paginator)->response()->getData(true)`). */
+export interface ResourcePage<TItem> {
+  data: TItem[]
+  meta: { current_page: number; last_page: number; per_page: number; total: number }
+}
+
+/** One page of results, whatever shape the API sent it in. */
+export interface PageResult<TItem> {
+  items: TItem[]
+  page: number
+  perPage: number
+  total: number
+  lastPage: number
+}
+
 /** Laravel's LengthAwarePaginator, returned by `dynamicPaginate()` endpoints. */
 export interface Paginated<TItem> {
   current_page: number

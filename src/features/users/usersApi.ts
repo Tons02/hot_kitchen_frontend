@@ -1,7 +1,16 @@
 import { apiSlice } from '@/services/api/apiSlice'
-import type { ApiResponse } from '@/types/api'
-import type { DeactivateUserRequest, User, UserListView, UserPayload } from './users.types'
-import { toUserFormData } from './users.utils'
+import { toPageResult } from '@/services/api/pagination'
+import type { ApiResponse, PageResult, Paginated } from '@/types/api'
+import { USERS_INFINITE_PAGE_SIZE } from './users.constants'
+import type {
+  DeactivateUserRequest,
+  User,
+  UserListView,
+  UserPayload,
+  UsersQueryArgs,
+  UsersQueryFilters,
+} from './users.types'
+import { toUserFormData, toUsersParams } from './users.utils'
 
 const unwrap = <T>(response: ApiResponse<T>) => response.data
 
@@ -10,21 +19,28 @@ const LIST_ID: Record<UserListView, string> = { current: 'LIST', archived: 'ARCH
 
 export const usersApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    /**
-     * `pagination=none` returns every user formatted by UserResource. The paginated variants
-     * of this endpoint don't return formatted users and page totals together, so the table
-     * searches, filters and pages on the client.
-     */
-    getUsers: builder.query<User[], UserListView>({
-      query: (view) => ({
-        url: '/users',
-        params: view === 'archived' ? { pagination: 'none', status: 'inactive' } : { pagination: 'none' },
-      }),
-      transformResponse: unwrap<User[]>,
-      providesTags: (users, _error, view) => [
+    /** One page of users for the table. Search, filters and paging all happen on the API. */
+    getUsers: builder.query<PageResult<User>, UsersQueryArgs>({
+      query: (args) => ({ url: '/users', params: toUsersParams(args) }),
+      transformResponse: (response: ApiResponse<Paginated<User>>) => toPageResult(response.data),
+      providesTags: (result, _error, { view }) => [
         { type: 'Users', id: LIST_ID[view] },
-        ...(users ?? []).map(({ id }) => ({ type: 'Users' as const, id })),
+        ...(result?.items ?? []).map(({ id }) => ({ type: 'Users' as const, id })),
       ],
+    }),
+
+    /** The same list, loaded a page at a time as the mobile card list scrolls. */
+    getUserPages: builder.infiniteQuery<PageResult<User>, UsersQueryFilters, number>({
+      infiniteQueryOptions: {
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => (lastPage.page < lastPage.lastPage ? lastPage.page + 1 : undefined),
+      },
+      query: ({ queryArg, pageParam }) => ({
+        url: '/users',
+        params: toUsersParams({ ...queryArg, page: pageParam, perPage: USERS_INFINITE_PAGE_SIZE }),
+      }),
+      transformResponse: (response: ApiResponse<Paginated<User>>) => toPageResult(response.data),
+      providesTags: (_result, _error, { view }) => [{ type: 'Users', id: LIST_ID[view] }],
     }),
 
     getUser: builder.query<User, number>({
@@ -88,6 +104,7 @@ export const usersApi = apiSlice.injectEndpoints({
 
 export const {
   useGetUsersQuery,
+  useGetUserPagesInfiniteQuery,
   useGetUserQuery,
   useCreateUserMutation,
   useUpdateUserMutation,

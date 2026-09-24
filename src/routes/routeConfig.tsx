@@ -53,19 +53,7 @@ export const routeConfig: RouteObject[] = [
                     path: ROUTES.users,
                     handle: { breadcrumb: 'Users' } satisfies RouteHandle,
                     element: <ProtectedRoute allowedRoles={USER_MANAGEMENT_ROLES} />,
-                    children: [
-                      { index: true, lazy: lazyPage(() => import('@/features/users/pages/UsersPage')) },
-                      {
-                        path: 'new',
-                        handle: { breadcrumb: 'Add user' } satisfies RouteHandle,
-                        lazy: lazyPage(() => import('@/features/users/pages/UserCreatePage')),
-                      },
-                      {
-                        path: ':userId/edit',
-                        handle: { breadcrumb: 'Edit user' } satisfies RouteHandle,
-                        lazy: lazyPage(() => import('@/features/users/pages/UserEditPage')),
-                      },
-                    ],
+                    children: [{ index: true, lazy: lazyPage(() => import('@/features/users/pages/UsersPage')) }],
                   },
                 ],
               },

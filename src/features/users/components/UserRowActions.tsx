@@ -1,5 +1,4 @@
 import { ArchiveIcon, EllipsisIcon, PencilIcon, UserCheckIcon, UserXIcon } from 'lucide-react'
-import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -8,7 +7,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ROUTES } from '@/routes/paths'
 import type { User, UserAction } from '../users.types'
 import { getFullName } from '../users.utils'
 
@@ -29,11 +27,9 @@ export function UserRowActions({ user, isSelf, onAction }: UserRowActionsProps) 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem asChild>
-          <Link to={ROUTES.userEdit(user.id)}>
-            <PencilIcon />
-            Edit
-          </Link>
+        <DropdownMenuItem onSelect={() => onAction({ type: 'edit', user })}>
+          <PencilIcon />
+          Edit
         </DropdownMenuItem>
         {user.is_deactivated ? (
           <DropdownMenuItem onSelect={() => onAction({ type: 'activate', user })}>

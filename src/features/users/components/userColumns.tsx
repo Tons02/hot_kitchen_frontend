@@ -1,9 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Link } from 'react-router'
-import { DataTableColumnHeader } from '@/components/common/data-table/DataTableColumnHeader'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
-import { ROUTES } from '@/routes/paths'
 import type { User, UserAction, UserListView } from '../users.types'
 import { getFullName, getRoleLabel, getUserStatus } from '../users.utils'
 import { UserRowActions } from './UserRowActions'
@@ -15,30 +12,39 @@ interface UserColumnsOptions {
   onAction: (action: UserAction) => void
 }
 
-/** Columns for the users table. Archived users are read-only, so they get no links or actions. */
+/** Columns for the users table. Archived users are read-only, so they get no edit link or actions. */
 export function getUserColumns({ view, currentUserId, onAction }: UserColumnsOptions): ColumnDef<User>[] {
   const isCurrentView = view === 'current'
 
   const columns: ColumnDef<User>[] = [
     {
+      id: 'id',
+      header: 'ID',
+      cell: ({ row }) => <span className="tabular-nums">{row.original.id}</span>,
+      meta: { className: 'hidden xl:table-cell' },
+    },
+    {
       id: 'name',
-      accessorFn: (user) => getFullName(user),
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+      header: 'Name',
       cell: ({ row }) => {
         const user = row.original
         const name = getFullName(user)
         return (
           <div className="flex min-w-48 items-center gap-3">
             <UserAvatar user={user} />
-            <div className="grid min-w-0 leading-tight">
+            <div className="grid min-w-0 justify-items-start leading-tight">
               {isCurrentView ? (
-                <Link to={ROUTES.userEdit(user.id)} className="truncate font-medium hover:underline">
+                <button
+                  type="button"
+                  className="max-w-full truncate rounded-sm font-medium hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  onClick={() => onAction({ type: 'edit', user })}
+                >
                   {name}
-                </Link>
+                </button>
               ) : (
                 <span className="truncate font-medium">{name}</span>
               )}
-              <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              <span className="max-w-full truncate text-xs text-muted-foreground">{user.email}</span>
             </div>
           </div>
         )
@@ -46,15 +52,12 @@ export function getUserColumns({ view, currentUserId, onAction }: UserColumnsOpt
     },
     {
       id: 'role',
-      accessorFn: (user) => getRoleLabel(user.role),
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
-      cell: ({ getValue }) => <Badge variant="secondary">{getValue<string>()}</Badge>,
-      meta: { className: 'hidden sm:table-cell' },
+      header: 'Role',
+      cell: ({ row }) => <Badge variant="secondary">{getRoleLabel(row.original.role)}</Badge>,
     },
     {
       id: 'store',
-      accessorFn: (user) => user.store?.name ?? '',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Store" />,
+      header: 'Store',
       cell: ({ row }) => {
         const { store } = row.original
         if (!store) return <span className="text-muted-foreground">All stores</span>
@@ -69,16 +72,13 @@ export function getUserColumns({ view, currentUserId, onAction }: UserColumnsOpt
     },
     {
       id: 'mobile',
-      accessorKey: 'mobile_number',
       header: 'Mobile',
-      enableSorting: false,
-      cell: ({ getValue }) => <span className="tabular-nums">{getValue<string>()}</span>,
-      meta: { className: 'hidden md:table-cell' },
+      cell: ({ row }) => <span className="tabular-nums">{row.original.mobile_number}</span>,
+      meta: { className: 'hidden xl:table-cell' },
     },
     {
       id: 'status',
-      accessorFn: (user) => getUserStatus(user, view),
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      header: 'Status',
       cell: ({ row }) => <UserStatusBadge status={getUserStatus(row.original, view)} />,
     },
   ]
@@ -87,7 +87,6 @@ export function getUserColumns({ view, currentUserId, onAction }: UserColumnsOpt
     columns.push({
       id: 'actions',
       header: () => <span className="sr-only">Actions</span>,
-      enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end">
           <UserRowActions user={row.original} isSelf={row.original.id === currentUserId} onAction={onAction} />

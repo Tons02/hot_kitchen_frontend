@@ -8,7 +8,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import { LoadingButton } from './LoadingButton'
+import {
+  MODAL_BODY_CLASS,
+  MODAL_CONTENT_CLASS,
+  MODAL_FOOTER_CLASS,
+  MODAL_HEADER_CLASS,
+  MODAL_TITLE_CLASS,
+} from './Modal'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -24,6 +32,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
 }
 
+/** A yes/no confirmation in the standard modal layout (see Modal.tsx). */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -37,12 +46,19 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => !isLoading && onOpenChange(next)}>
-      <AlertDialogContent {...(description ? {} : { 'aria-describedby': undefined })}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
+      <AlertDialogContent
+        className={cn(MODAL_CONTENT_CLASS, 'sm:max-w-md data-[size=default]:max-w-[calc(100%-2rem)] data-[size=default]:sm:max-w-md')}
+        {...(description ? {} : { 'aria-describedby': undefined })}
+      >
+        <AlertDialogHeader className={cn(MODAL_HEADER_CLASS, 'place-items-start')}>
+          <AlertDialogTitle className={MODAL_TITLE_CLASS}>{title}</AlertDialogTitle>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        {description && (
+          <div className={MODAL_BODY_CLASS}>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          </div>
+        )}
+        <AlertDialogFooter className={MODAL_FOOTER_CLASS}>
           <AlertDialogCancel disabled={isLoading}>{cancelLabel}</AlertDialogCancel>
           {/* A plain button instead of AlertDialogAction, which would close the dialog before the action finishes. */}
           <LoadingButton variant={variant} isLoading={isLoading} onClick={onConfirm}>

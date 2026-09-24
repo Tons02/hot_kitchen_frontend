@@ -1,16 +1,12 @@
 import tableLoadingAnimation from '@/assets/tableLoading.json'
 import { LottieAnimation } from '@/components/common/LottieAnimation'
 
-/** Shown in the table body while rows load. */
+/** Shown while rows load: just the animation. The label is read out by screen readers only. */
 export function DataTableLoadingState({ label }: { label: string }) {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col items-center justify-center gap-1 px-6 py-10 text-sm text-muted-foreground"
-    >
+    <div role="status" aria-live="polite" className="flex items-center justify-center px-6 py-10">
       <LottieAnimation animationData={tableLoadingAnimation} className="size-28" />
-      <span>{label}</span>
+      <span className="sr-only">{label}</span>
     </div>
   )
 }

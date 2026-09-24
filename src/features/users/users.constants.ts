@@ -48,8 +48,11 @@ export const PROOF_OF_LICENSE_TYPES = [...PROFILE_PICTURE_TYPES, 'application/pd
 export const MOBILE_PREFIX = '+63'
 
 export const DEFAULT_USER_FILTERS: UserFilterValues = {
-  search: '',
   role: 'all',
   storeId: 'all',
   status: 'all',
 }
+
+export const DEFAULT_USERS_PAGE_SIZE = 10
+/** Page size for the mobile card list, which loads more as you scroll. */
+export const USERS_INFINITE_PAGE_SIZE = 10

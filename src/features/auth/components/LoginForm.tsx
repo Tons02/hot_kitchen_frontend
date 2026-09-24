@@ -10,6 +10,7 @@ import { PasswordInput } from '@/components/common/PasswordInput'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { useSingleFlight } from '@/hooks/use-single-flight'
 import { applyServerErrors } from '@/lib/form'
 import { loginSchema, type LoginFormValues } from '../auth.schemas'
 import { useLoginMutation } from '../authApi'
@@ -30,7 +31,8 @@ export function LoginForm() {
   const { isSubmitting, errors } = form.formState
 
   // On success the auth state changes and PublicRoute redirects, so there's nothing to navigate here.
-  const signIn = async (values: LoginFormValues) => {
+  // Ignores a second click that lands before the button has re-rendered as disabled.
+  const signIn = useSingleFlight(async (values: LoginFormValues) => {
     try {
       const { data: user } = await login(values).unwrap()
       toast.success(`Welcome back, ${user.first_name}!`)
@@ -38,7 +40,7 @@ export function LoginForm() {
       applyServerErrors(error, form.setError)
       mascotRef.current?.play('dizzy', 1400)
     }
-  }
+  })
 
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => form.handleSubmit(signIn)(event)
 

@@ -61,18 +61,29 @@ export type UserListView = 'current' | 'archived'
 
 export type UserStatus = 'active' | 'deactivated' | 'archived'
 
-/** A row action waiting for confirmation. */
+/** A row action: edit opens the form dialog, the rest a confirmation. */
 export interface UserAction {
-  type: 'deactivate' | 'activate' | 'archive'
+  type: 'edit' | 'deactivate' | 'activate' | 'archive'
   user: User
 }
 
-/** List filters. Select filters use 'all' for "no filter". */
+/** The filter popover's fields. 'all' means "no filter". */
 export interface UserFilterValues {
-  search: string
   role: string
   storeId: string
   status: string
+}
+
+/** Everything that selects which users the list asks the API for (the page aside). */
+export interface UsersQueryFilters extends UserFilterValues {
+  view: UserListView
+  /** Sent as `search`; the API matches it against the columns in UserFilter::$columnSearch. */
+  search: string
+}
+
+export interface UsersQueryArgs extends UsersQueryFilters {
+  page: number
+  perPage: number
 }
 
 /** Everything `POST /users` and `PATCH /users/{id}` accept. Sent as multipart form data. */

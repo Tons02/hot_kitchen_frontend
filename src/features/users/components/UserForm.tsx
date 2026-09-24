@@ -1,20 +1,23 @@
 import { yupResolver } from '@hookform/resolvers/yup'
 import { ExternalLinkIcon } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Link } from 'react-router'
 import { FileInput } from '@/components/common/FileInput'
 import { FormErrorAlert } from '@/components/common/FormErrorAlert'
 import { FormField } from '@/components/common/FormField'
 import { FormSection } from '@/components/common/FormSection'
 import { LoadingButton } from '@/components/common/LoadingButton'
+import { ModalBody, ModalFooter } from '@/components/common/Modal'
 import { SelectInput, type SelectOption } from '@/components/common/SelectInput'
 import { Button } from '@/components/ui/button'
+import { DialogClose } from '@/components/ui/dialog'
+import { FieldSeparator } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
 import { useStoreOptions } from '@/features/stores/hooks/useStoreOptions'
+import { useAuthorizedFileUrl } from '@/hooks/use-authorized-file-url'
+import { useSingleFlight } from '@/hooks/use-single-flight'
 import { todayIsoDate } from '@/lib/date'
 import { applyServerErrors } from '@/lib/form'
-import { ROUTES } from '@/routes/paths'
 import {
   GENDER_LABELS,
   MOBILE_PREFIX,
@@ -46,6 +49,8 @@ interface UserFormProps {
 export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
   const isEditing = user !== undefined
   const currentLicenseUrl = user?.rider_profile?.proof_of_license_url
+  // The license route requires the Bearer token, so the link points at a fetched copy.
+  const currentLicenseSrc = useAuthorizedFileUrl(currentLicenseUrl)
 
   const form = useForm<UserFormValues>({
     resolver: yupResolver(userSchema),
@@ -62,16 +67,19 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
 
   const stores = useStoreOptions()
 
-  const submit = async (values: UserFormValues) => {
+  // Ignores a second click that lands before the button has re-rendered as disabled.
+  const submit = useSingleFlight(async (values: UserFormValues) => {
     try {
       await onSubmit(toUserPayload(values))
     } catch (error) {
       applyServerErrors(error, form.setError)
     }
-  }
+  })
 
   return (
-    <form onSubmit={form.handleSubmit(submit)} noValidate className="flex max-w-4xl flex-col gap-6">
+    // Fills the dialog: the fields scroll, the footer stays put.
+    <form onSubmit={form.handleSubmit(submit)} noValidate className="flex min-h-0 flex-1 flex-col">
+      <ModalBody className="flex flex-col gap-6">
       <FormErrorAlert title="Couldn't save this user" message={errors.root?.server?.message} />
 
       <FormSection title="Profile">
@@ -127,6 +135,8 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
         </div>
       </FormSection>
 
+      <FieldSeparator />
+
       <FormSection title="Contact and sign-in">
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
@@ -170,6 +180,8 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
         />
       </FormSection>
 
+      <FieldSeparator />
+
       <FormSection
         title="Role and store"
         description="Store managers, cashiers, kitchen staff and riders work at one store. Administrators work across all stores."
@@ -199,6 +211,8 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
           )}
         </div>
       </FormSection>
+
+      {isRider && <FieldSeparator />}
 
       {isRider && (
         <FormSection title="Rider details" description="Vehicle and license details for deliveries.">
@@ -239,11 +253,11 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
             description={
               <>
                 A photo or scan of the license: PNG, JPG, WebP or PDF, up to 10 MB.
-                {currentLicenseUrl && (
+                {currentLicenseSrc && (
                   <>
                     {' '}
                     <a
-                      href={currentLicenseUrl}
+                      href={currentLicenseSrc}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
@@ -266,14 +280,18 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
         </FormSection>
       )}
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="outline" asChild>
-          <Link to={ROUTES.users}>Cancel</Link>
-        </Button>
+      </ModalBody>
+
+      <ModalFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="outline" disabled={isSubmitting}>
+            Cancel
+          </Button>
+        </DialogClose>
         <LoadingButton type="submit" isLoading={isSubmitting}>
           {submitLabel}
         </LoadingButton>
-      </div>
+      </ModalFooter>
     </form>
   )
 }
