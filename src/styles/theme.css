@@ -1,0 +1,158 @@
+/*
+ * Application theme: the single place to change brand colors, radius and typography.
+ *
+ * Components never use raw colors. They use semantic utilities (bg-primary,
+ * text-muted-foreground, border-border, ...) that resolve to the tokens below,
+ * so light and dark mode share the same component code.
+ *
+ * Every token declared in :root must also be declared in .dark.
+ */
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Colors come from the logo (public/hot_kitchen_logo.png):
+ *   lid orange #F16033 · pot mint #83CCB9 · pot teal #00A69C · lid red #EE4037
+ * Orange drives actions, mint and teal carry surfaces and status, and neutrals lean teal.
+ * The raw logo colors are too light for white text (3.3:1 at best), so buttons and text use
+ * deeper shades of the same hues. The exact lid orange is kept for focus rings.
+ * Every text/background pair below meets WCAG AA (4.5:1) in both themes.
+ */
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.22 0.03 195);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.03 195);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.03 195);
+
+  --primary: oklch(0.572 0.186 37.3);
+  --primary-foreground: oklch(0.99 0.005 175.9);
+  --secondary: oklch(0.95 0.035 175.9);
+  --secondary-foreground: oklch(0.38 0.066 187.3);
+  --muted: oklch(0.965 0.01 190);
+  --muted-foreground: oklch(0.5 0.03 195);
+  --accent: oklch(0.955 0.03 175.9);
+  --accent-foreground: oklch(0.33 0.058 187.3);
+
+  /* Crimson rather than the logo's lid red, which sits too close to the primary orange. */
+  --destructive: oklch(0.555 0.215 18);
+  --success: oklch(0.52 0.09 187.3);
+  --success-foreground: oklch(0.99 0.005 175.9);
+  --warning: oklch(0.769 0.167 70.1);
+  --warning-foreground: oklch(0.279 0.077 45.6);
+
+  --border: oklch(0.915 0.015 185);
+  --input: oklch(0.915 0.015 185);
+  --ring: oklch(0.669 0.188 37.3);
+
+  --chart-1: oklch(0.837 0.128 66.29);
+  --chart-2: oklch(0.705 0.213 47.604);
+  --chart-3: oklch(0.646 0.222 41.116);
+  --chart-4: oklch(0.553 0.195 38.402);
+  --chart-5: oklch(0.47 0.157 37.304);
+
+  --sidebar: oklch(0.982 0.008 185);
+  --sidebar-foreground: oklch(0.22 0.03 195);
+  --sidebar-primary: oklch(0.572 0.186 37.3);
+  --sidebar-primary-foreground: oklch(0.99 0.005 175.9);
+  --sidebar-accent: oklch(0.95 0.035 175.9);
+  --sidebar-accent-foreground: oklch(0.33 0.058 187.3);
+  --sidebar-border: oklch(0.915 0.015 185);
+  --sidebar-ring: oklch(0.669 0.188 37.3);
+}
+
+/* Dark: deep teal-charcoal grounds; primary buttons switch to bright orange with dark text. */
+.dark {
+  --background: oklch(0.17 0.018 200);
+  --foreground: oklch(0.97 0.008 175.9);
+  --card: oklch(0.215 0.02 200);
+  --card-foreground: oklch(0.97 0.008 175.9);
+  --popover: oklch(0.215 0.02 200);
+  --popover-foreground: oklch(0.97 0.008 175.9);
+
+  --primary: oklch(0.7 0.18 37.3);
+  --primary-foreground: oklch(0.17 0.018 200);
+  --secondary: oklch(0.29 0.04 187.3);
+  --secondary-foreground: oklch(0.9 0.06 175.9);
+  --muted: oklch(0.255 0.02 200);
+  --muted-foreground: oklch(0.72 0.03 185);
+  --accent: oklch(0.28 0.035 187.3);
+  --accent-foreground: oklch(0.97 0.008 175.9);
+
+  --destructive: oklch(0.7 0.19 20);
+  --success: oklch(0.792 0.078 175.9);
+  --success-foreground: oklch(0.17 0.018 200);
+  --warning: oklch(0.828 0.17 84.4);
+  --warning-foreground: oklch(0.279 0.077 45.6);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.669 0.188 37.3);
+
+  --chart-1: oklch(0.837 0.128 66.29);
+  --chart-2: oklch(0.705 0.213 47.604);
+  --chart-3: oklch(0.646 0.222 41.116);
+  --chart-4: oklch(0.553 0.195 38.402);
+  --chart-5: oklch(0.47 0.157 37.304);
+
+  --sidebar: oklch(0.2 0.02 200);
+  --sidebar-foreground: oklch(0.97 0.008 175.9);
+  --sidebar-primary: oklch(0.7 0.18 37.3);
+  --sidebar-primary-foreground: oklch(0.17 0.018 200);
+  --sidebar-accent: oklch(0.28 0.035 187.3);
+  --sidebar-accent-foreground: oklch(0.97 0.008 175.9);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.669 0.188 37.3);
+}

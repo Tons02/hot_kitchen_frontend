@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "./theme.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Paints a Lottie animation's shapes in the current text color. Used by <LottieAnimation inheritColor>. */
+@utility lottie-current-color {
+  & [fill]:not([fill='none']):not([fill^='url']) {
+    fill: currentColor;
+  }
+
+  & [stroke]:not([stroke='none']):not([stroke^='url']) {
+    stroke: currentColor;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Lets top-level screens (layouts, loaders, error pages) fill the viewport with flex-1. */
+  #root {
+    @apply flex min-h-svh flex-col;
+  }
+}
