@@ -1,5 +1,6 @@
 import { useAppDispatch } from '@/app/hooks'
-import type { StoreBackgroundImage, StoreImageChanges, StoreImageStep, StoreImageStepStatus } from '../stores.types'
+import { runImageSteps, type ImageSaveStatus, type RunImageStepsResult } from '@/lib/layered-images'
+import type { StoreBackgroundImage, StoreImageChanges, StoreImageStep } from '../stores.types'
 import { planStoreImageSteps } from '../stores.utils'
 import {
   LIST_ID,
@@ -9,11 +10,6 @@ import {
   useUpdateStoreBackgroundImageMutation,
   useUploadStoreLogoMutation,
 } from '../storesApi'
-
-export type SaveStoreImagesResult =
-  | { ok: true }
-  /** Stopped at a failed request. Everything before it was saved; nothing after it ran. */
-  | { ok: false; error: unknown; completed: number; total: number }
 
 /**
  * Applies the form's image changes after the store itself has saved, one request at a time
@@ -46,27 +42,13 @@ export function useSaveStoreImages() {
     storeId: number,
     saved: StoreBackgroundImage[],
     changes: StoreImageChanges,
-    onProgress: (key: string, status: StoreImageStepStatus) => void,
-  ): Promise<SaveStoreImagesResult> => {
+    onProgress: (key: string, status: ImageSaveStatus) => void,
+  ): Promise<RunImageStepsResult> => {
     const steps = planStoreImageSteps(saved, changes)
     if (steps.length === 0) return { ok: true }
 
-    for (const step of steps) onProgress(step.key, 'pending')
-
     try {
-      for (const [index, step] of steps.entries()) {
-        onProgress(step.key, 'working')
-        try {
-          await runStep(storeId, step)
-        } catch (error) {
-          onProgress(step.key, 'failed')
-          return { ok: false, error, completed: index, total: steps.length }
-        }
-        // An image that's parked first has another step later; it's only done after that one.
-        const hasMoreSteps = steps.slice(index + 1).some((later) => later.key === step.key)
-        onProgress(step.key, hasMoreSteps ? 'pending' : 'done')
-      }
-      return { ok: true }
+      return await runImageSteps(steps, (step) => runStep(storeId, step), onProgress)
     } finally {
       // One refresh for the whole save, whether it finished or stopped part-way.
       dispatch(

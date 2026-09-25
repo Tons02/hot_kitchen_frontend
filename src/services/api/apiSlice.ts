@@ -10,6 +10,6 @@ export const apiSlice = createApi({
   baseQuery: baseQueryWithAuth,
   // After the connection drops and comes back, lists and records on screen reload themselves.
   refetchOnReconnect: true,
-  tagTypes: ['Users', 'Stores', 'StoreInventories', 'ProductCategories', 'Products'],
+  tagTypes: ['Users', 'Stores', 'StoreOperatingHours', 'StoreInventories', 'StoreVouchers', 'ProductCategories', 'Products', 'Cart', 'Addresses'],
   endpoints: () => ({}),
 })

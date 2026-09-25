@@ -1,3 +1,4 @@
+import { toLayeredImageFormData } from '@/lib/layered-images'
 import { apiSlice } from '@/services/api/apiSlice'
 import { toPageResult } from '@/services/api/pagination'
 import type { ApiResponse, PageResult, Paginated } from '@/types/api'
@@ -6,11 +7,13 @@ import type {
   Store,
   StoreBackgroundImage,
   StoreListView,
+  StoreOperatingHour,
   StorePayload,
   StoresQueryArgs,
   UpdateBackgroundImageRequest,
+  UpdateOperatingHoursRequest,
 } from './stores.types'
-import { toBackgroundImageFormData, toLogoFormData, toStoresParams } from './stores.utils'
+import { toLogoFormData, toStoresParams } from './stores.utils'
 
 const unwrap = <T>(response: ApiResponse<T>) => response.data
 
@@ -27,6 +30,16 @@ export const storesApi = apiSlice.injectEndpoints({
         { type: 'Stores', id: 'LIST' },
         ...(stores ?? []).map(({ id }) => ({ type: 'Stores' as const, id })),
       ],
+    }),
+
+    /** The first page of current stores matching `search`, for pickers. Never loads the whole list. */
+    searchStores: builder.query<PageResult<Store>, { search: string; perPage: number }>({
+      query: ({ search, perPage }) => ({
+        url: '/stores',
+        params: { page: 1, per_page: perPage, ...(search.trim() ? { search: search.trim() } : {}) },
+      }),
+      transformResponse: (response: ApiResponse<Paginated<Store>>) => toPageResult(response.data),
+      providesTags: [{ type: 'Stores', id: LIST_ID.current }],
     }),
 
     /**
@@ -80,7 +93,7 @@ export const storesApi = apiSlice.injectEndpoints({
       query: ({ storeId, image, layer }) => ({
         url: `/stores/${storeId}/background-images`,
         method: 'POST',
-        body: toBackgroundImageFormData({ image, layer }),
+        body: toLayeredImageFormData({ image, layer }),
       }),
       transformResponse: unwrap<StoreBackgroundImage>,
     }),
@@ -90,7 +103,7 @@ export const storesApi = apiSlice.injectEndpoints({
       query: ({ storeId, imageId, image, layer }) => ({
         url: `/stores/${storeId}/background-images/${imageId}`,
         method: 'POST',
-        body: toBackgroundImageFormData({ image, layer }),
+        body: toLayeredImageFormData({ image, layer }),
       }),
       transformResponse: unwrap<StoreBackgroundImage>,
     }),
@@ -100,6 +113,28 @@ export const storesApi = apiSlice.injectEndpoints({
         url: `/stores/${storeId}/background-images/${imageId}`,
         method: 'DELETE',
       }),
+    }),
+
+    /** The store's weekly schedule, one row per day it has hours for. */
+    getStoreOperatingHours: builder.query<StoreOperatingHour[], number>({
+      query: (storeId) => `/stores/${storeId}/operating-hours`,
+      transformResponse: unwrap<StoreOperatingHour[]>,
+      providesTags: (_hours, _error, storeId) => [{ type: 'StoreOperatingHours', id: storeId }],
+    }),
+
+    /** Replaces the whole week in one call. Store rows embed their hours, so the lists refresh too. */
+    updateStoreOperatingHours: builder.mutation<StoreOperatingHour[], UpdateOperatingHoursRequest>({
+      query: ({ storeId, operatingHours }) => ({
+        url: `/stores/${storeId}/operating-hours`,
+        method: 'PUT',
+        body: { operating_hours: operatingHours },
+      }),
+      transformResponse: unwrap<StoreOperatingHour[]>,
+      invalidatesTags: (_hours, _error, { storeId }) => [
+        { type: 'StoreOperatingHours', id: storeId },
+        { type: 'Stores', id: storeId },
+        { type: 'Stores', id: LIST_ID.current },
+      ],
     }),
 
     /** Soft-deletes the store; it moves from the current list to the archived one. */
@@ -129,6 +164,7 @@ export const storesApi = apiSlice.injectEndpoints({
 
 export const {
   useGetStoresQuery,
+  useSearchStoresQuery,
   useGetStorePageQuery,
   useGetStoreQuery,
   useCreateStoreMutation,
@@ -137,6 +173,8 @@ export const {
   useAddStoreBackgroundImageMutation,
   useUpdateStoreBackgroundImageMutation,
   useDeleteStoreBackgroundImageMutation,
+  useGetStoreOperatingHoursQuery,
+  useUpdateStoreOperatingHoursMutation,
   useArchiveStoreMutation,
   useRestoreStoreMutation,
 } = storesApi

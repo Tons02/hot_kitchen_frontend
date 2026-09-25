@@ -3,14 +3,24 @@ import { toast } from 'sonner'
 import { listenerMiddleware } from '@/app/listenerMiddleware'
 import { API_ERROR_MESSAGES } from '@/services/api/apiError'
 import { apiSlice } from '@/services/api/apiSlice'
+import type { AuthSession } from './auth.types'
 import { clearSession, saveSession } from './auth.utils'
-import { loggedIn, loggedOut, sessionExpired } from './authSlice'
+import { loggedIn, loggedOut, profileUpdated, sessionExpired } from './authSlice'
 
 /** Side effects of auth state changes. Reducers stay pure; persistence and cache resets happen here. */
 export function registerAuthListeners(): void {
   listenerMiddleware.startListening({
     actionCreator: loggedIn,
     effect: ({ payload }) => saveSession(payload),
+  })
+
+  // Keeps the stored session in step with profile edits, so a reload shows the new name.
+  listenerMiddleware.startListening({
+    actionCreator: profileUpdated,
+    effect: (_action, { getState }) => {
+      const { auth } = getState() as { auth: { token: string | null; user: AuthSession['user'] | null } }
+      if (auth.token && auth.user) saveSession({ token: auth.token, user: auth.user })
+    },
   })
 
   listenerMiddleware.startListening({

@@ -21,7 +21,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
-import { useStoreOptions } from "@/features/stores/hooks/useStoreOptions";
+import { StoreCombobox } from "@/features/stores/components/StoreCombobox";
 import { useAuthorizedFileUrl } from "@/hooks/use-authorized-file-url";
 import { useSingleFlight } from "@/hooks/use-single-flight";
 import { todayIsoDate } from "@/lib/date";
@@ -84,7 +84,6 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
   const initials =
     `${firstName.trim().charAt(0)}${lastName.trim().charAt(0)}`.toUpperCase();
 
-  const stores = useStoreOptions();
 
   // Ignores a second click that lands before the button has re-rendered as disabled.
   const submit = useSingleFlight(async (values: UserFormValues) => {
@@ -270,21 +269,7 @@ export function UserForm({ user, submitLabel, onSubmit }: UserFormProps) {
                 control={control}
                 name="store_id"
                 label="Store"
-                description={
-                  stores.isError
-                    ? "Couldn't load stores. Refresh the page to try again."
-                    : undefined
-                }
-                render={(field) => (
-                  <SelectInput
-                    {...field}
-                    options={stores.options}
-                    disabled={stores.isLoading || stores.isError}
-                    placeholder={
-                      stores.isLoading ? "Loading stores…" : "Select store"
-                    }
-                  />
-                )}
+                render={(field) => <StoreCombobox {...field} />}
               />
             )}
           </div>

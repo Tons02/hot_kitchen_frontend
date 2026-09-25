@@ -1,19 +1,51 @@
-/** A background image, as embedded in StoreResource. Public URL (no auth needed). */
-export interface StoreBackgroundImage {
-  id: number
-  image_url: string
-  /** Display order, starting at 1. */
-  layer: number
-}
+import type { LayeredImage, LayeredImageDraft, LayeredImageStep } from '@/lib/layered-images'
 
+/** A background image, as embedded in StoreResource. Public URL (no auth needed). */
+export type StoreBackgroundImage = LayeredImage
+
+/** ISO day numbers, per the API's DayOfWeek enum: 1 (Monday) to 7 (Sunday). */
+export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7
+
+/** Mirrors the API's StoreOperatingHourResource. */
 export interface StoreOperatingHour {
   id: number
-  /** 0 (Sunday) to 6, per the API's DayOfWeek enum. */
-  day_of_week: number
+  day_of_week: DayOfWeek
+  /** The enum case name, e.g. "MONDAY". */
   day_name: string
+  /** A MySQL time, e.g. "08:00:00". Null when the day is closed. */
   open_time: string | null
   close_time: string | null
   is_closed: boolean
+}
+
+/** One day in `PUT /stores/{id}/operating-hours`. Times are "HH:mm" and ignored when closed. */
+export interface OperatingHourPayload {
+  day_of_week: DayOfWeek
+  is_closed: boolean
+  open_time: string | null
+  close_time: string | null
+}
+
+/** The whole week at once: the API requires all seven days (StoreOperatingHoursRequest). */
+export interface UpdateOperatingHoursRequest {
+  storeId: number
+  operatingHours: OperatingHourPayload[]
+}
+
+/** A run of consecutive days with the same hours, e.g. { days: "Mon–Fri", hours: "8:00 AM – 5:00 PM" }. */
+export interface OperatingHoursSummaryLine {
+  days: string
+  hours: string
+  isClosed: boolean
+}
+
+/** One delivery tier (StoreDeliveryRadiusResource): deliveries between these distances cost `fee`. */
+export interface StoreDeliveryTier {
+  id: number
+  start_km: string | number
+  end_km: string | number
+  /** A decimal string, e.g. "49.00". */
+  fee: string
 }
 
 /** Mirrors the API's StoreResource. Relations are present when the endpoint loads them. */
@@ -23,6 +55,8 @@ export interface Store {
   logo_url?: string
   background_images?: StoreBackgroundImage[]
   operating_hours?: StoreOperatingHour[]
+  /** Delivery fee tiers by distance, on `GET /stores/{id}`. */
+  delivery_radius?: StoreDeliveryTier[]
   code: string
   name: string
   title_banner: string
@@ -39,6 +73,10 @@ export interface Store {
   mobile_number: string
   email: string
   is_active: boolean
+  /** Inventory counts, present on `GET /stores` (withCount). */
+  products_count?: number
+  low_stock_count?: number
+  out_of_stock_count?: number
   created_at: string
   updated_at: string
 }
@@ -85,39 +123,16 @@ export interface StorePayload {
   email: string
 }
 
-/**
- * One background image in the form, in display order. Nothing is sent until the form is saved:
- * existing images can get a replacement file or be dropped from the list (removed), new ones are
- * uploaded, and every image ends up on the layer matching its position (1, 2, 3, ...).
- */
-export type BackgroundImageDraft =
-  | { key: string; kind: 'existing'; id: number; url: string; layer: number; replacement: File | null }
-  | { key: string; kind: 'new'; file: File }
-
 /** Image changes made in the form, sent to their own endpoints after the store itself saves. */
 export interface StoreImageChanges {
   /** A new logo to upload (replaces the current one). */
   logo: File | null
   /** The background images as they should end up, in order. */
-  backgroundImages: BackgroundImageDraft[]
+  backgroundImages: LayeredImageDraft[]
 }
 
-/**
- * One request in saving a store's images, run in order. `key` names the logo ('logo') or the
- * draft it belongs to, so the form can show a spinner on that image while it runs.
- */
-export type StoreImageStep =
-  | { kind: 'logo'; key: 'logo'; file: File }
-  | { kind: 'remove'; key: string; imageId: number }
-  /** Parks an image on a spare layer so another can take its old one (layers must be unique). */
-  | { kind: 'park'; key: string; imageId: number; layer: number }
-  | { kind: 'update'; key: string; imageId: number; layer?: number; file?: File }
-  | { kind: 'add'; key: string; file: File; layer: number }
-
-export type StoreImageStepStatus = 'pending' | 'working' | 'done' | 'failed'
-
-/** Status per image key while the form saves, e.g. { logo: 'done', 'existing-7': 'working' }. */
-export type StoreSaveProgress = Record<string, StoreImageStepStatus>
+/** One request in saving a store's images: the logo upload, then the background image steps. */
+export type StoreImageStep = { kind: 'logo'; key: 'logo'; file: File } | LayeredImageStep
 
 export interface AddBackgroundImageRequest {
   storeId: number

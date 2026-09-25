@@ -15,7 +15,7 @@ export function NotFoundPage() {
         description="The page you're looking for doesn't exist or has been moved."
         action={
           <Button asChild>
-            <Link to={ROUTES.root}>Back to dashboard</Link>
+            <Link to={ROUTES.home}>Back to home</Link>
           </Button>
         }
       />

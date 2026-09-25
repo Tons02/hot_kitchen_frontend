@@ -1,12 +1,21 @@
-import { MOBILE_PREFIX } from './stores.constants'
-import type { StoreFormValues } from './stores.schemas'
+import {
+  getLayeredImageDrafts,
+  planLayeredImageSteps,
+  summarizeLayeredImageChanges,
+  type LayeredImageChangeSummary,
+} from '@/lib/layered-images'
+import { DAYS_OF_WEEK, DEFAULT_CLOSE_TIME, DEFAULT_OPEN_TIME, MOBILE_PREFIX } from './stores.constants'
+import type { OperatingHourFormValue, OperatingHoursFormValues, StoreFormValues } from './stores.schemas'
 import type {
-  BackgroundImageDraft,
+  DayOfWeek,
+  OperatingHourPayload,
+  OperatingHoursSummaryLine,
   Store,
   StoreBackgroundImage,
   StoreImageChanges,
   StoreImageStep,
   StoreListView,
+  StoreOperatingHour,
   StorePayload,
   StoresQueryArgs,
   StoreStatus,
@@ -67,7 +76,7 @@ function stripMobilePrefix(mobileNumber: string): string {
 export function getStoreFormDefaults(store?: Store): StoreFormValues {
   return {
     logo: null,
-    background_images: getBackgroundImageDrafts(store),
+    background_images: getLayeredImageDrafts(store?.background_images),
     code: store?.code ?? '',
     name: store?.name ?? '',
     title_banner: store?.title_banner ?? '',
@@ -109,85 +118,16 @@ export function toStoreImageChanges(values: StoreFormValues): StoreImageChanges 
   return { logo: values.logo ?? null, backgroundImages: values.background_images }
 }
 
-/** The store's saved background images as form drafts, in layer order. */
-export function getBackgroundImageDrafts(store?: Store): BackgroundImageDraft[] {
-  return [...(store?.background_images ?? [])]
-    .sort((a, b) => a.layer - b.layer)
-    .map((image) => ({
-      key: `existing-${image.id}`,
-      kind: 'existing',
-      id: image.id,
-      url: image.image_url,
-      layer: image.layer,
-      replacement: null,
-    }))
-}
-
-let newDraftCount = 0
-
-export function toNewBackgroundImageDraft(file: File): BackgroundImageDraft {
-  newDraftCount += 1
-  return { key: `new-${newDraftCount}`, kind: 'new', file }
-}
-
-/**
- * The requests that turn the saved images into the form's, one at a time:
- * 1. upload the logo
- * 2. remove images dropped from the list (frees their layers)
- * 3. park every image that changes layer on a spare one, since two images can't share a layer
- * 4. move each image to its final layer (1, 2, 3, ...), sending its replacement file in the same call
- * 5. upload new images straight onto their layers
- */
+/** The logo upload first, then the background image requests (see `planLayeredImageSteps`). */
 export function planStoreImageSteps(saved: StoreBackgroundImage[], changes: StoreImageChanges): StoreImageStep[] {
-  const steps: StoreImageStep[] = []
-  const drafts = changes.backgroundImages
-
-  if (changes.logo) steps.push({ kind: 'logo', key: 'logo', file: changes.logo })
-
-  const keptIds = new Set(drafts.flatMap((draft) => (draft.kind === 'existing' ? [draft.id] : [])))
-  for (const image of saved) {
-    if (!keptIds.has(image.id)) steps.push({ kind: 'remove', key: `existing-${image.id}`, imageId: image.id })
-  }
-
-  const targets = drafts.map((draft, index) => ({ draft, layer: index + 1 }))
-  // Above every layer in use now and every final layer, so a parked image never blocks one.
-  const firstSpareLayer = Math.max(drafts.length, ...saved.map((image) => image.layer)) + 1
-
-  let parked = 0
-  for (const { draft, layer } of targets) {
-    if (draft.kind === 'existing' && draft.layer !== layer) {
-      steps.push({ kind: 'park', key: draft.key, imageId: draft.id, layer: firstSpareLayer + parked })
-      parked += 1
-    }
-  }
-
-  for (const { draft, layer } of targets) {
-    if (draft.kind !== 'existing') continue
-    const moves = draft.layer !== layer
-    if (moves || draft.replacement) {
-      steps.push({
-        kind: 'update',
-        key: draft.key,
-        imageId: draft.id,
-        layer: moves ? layer : undefined,
-        file: draft.replacement ?? undefined,
-      })
-    }
-  }
-
-  for (const { draft, layer } of targets) {
-    if (draft.kind === 'new') steps.push({ kind: 'add', key: draft.key, file: draft.file, layer })
-  }
-
-  return steps
+  return [
+    ...(changes.logo ? [{ kind: 'logo', key: 'logo', file: changes.logo } as const] : []),
+    ...planLayeredImageSteps(saved, changes.backgroundImages),
+  ]
 }
 
-export interface StoreImageChangeSummary {
+export interface StoreImageChangeSummary extends LayeredImageChangeSummary {
   logo: boolean
-  added: number
-  replaced: number
-  removed: number
-  reordered: boolean
 }
 
 /** What saving will do to the images, for the confirmation step. */
@@ -195,16 +135,7 @@ export function summarizeStoreImageChanges(
   saved: StoreBackgroundImage[],
   changes: StoreImageChanges,
 ): StoreImageChangeSummary {
-  const drafts = changes.backgroundImages
-  const kept = drafts.filter((draft) => draft.kind === 'existing')
-
-  return {
-    logo: changes.logo !== null,
-    added: drafts.filter((draft) => draft.kind === 'new').length,
-    replaced: kept.filter((draft) => draft.replacement).length,
-    removed: saved.length - kept.length,
-    reordered: drafts.some((draft, index) => draft.kind === 'existing' && draft.layer !== index + 1),
-  }
+  return { logo: changes.logo !== null, ...summarizeLayeredImageChanges(saved, changes.backgroundImages) }
 }
 
 /** The multipart body for the logo endpoint. */
@@ -214,10 +145,80 @@ export function toLogoFormData(logo: File): FormData {
   return body
 }
 
-/** The multipart body for adding or updating a background image. Leaves out what isn't changing. */
-export function toBackgroundImageFormData({ image, layer }: { image?: File; layer?: number }): FormData {
-  const body = new FormData()
-  if (image) body.append('image', image)
-  if (layer !== undefined) body.append('layer', String(layer))
-  return body
+/** "08:00:00" → "08:00", the format <input type="time"> and the API's H:i rule use. */
+function toTimeValue(time: string | null): string {
+  return time ? time.slice(0, 5) : ''
+}
+
+/** One row per day, Monday first. Days the store has no hours for yet start open 8 AM to 5 PM. */
+export function getOperatingHoursFormDefaults(hours: StoreOperatingHour[]): OperatingHoursFormValues {
+  const byDay = new Map(hours.map((hour) => [hour.day_of_week, hour]))
+
+  return {
+    operating_hours: DAYS_OF_WEEK.map(({ value }) => {
+      const saved = byDay.get(value)
+      return {
+        day_of_week: value,
+        is_closed: saved?.is_closed ?? false,
+        open_time: toTimeValue(saved?.open_time ?? null) || DEFAULT_OPEN_TIME,
+        close_time: toTimeValue(saved?.close_time ?? null) || DEFAULT_CLOSE_TIME,
+      }
+    }),
+  }
+}
+
+/** Converts validated form values into the API payload. Closed days send no times. */
+export function toOperatingHoursPayload(values: OperatingHoursFormValues): OperatingHourPayload[] {
+  return values.operating_hours.map((hour) => ({
+    day_of_week: hour.day_of_week as DayOfWeek,
+    is_closed: hour.is_closed,
+    open_time: hour.is_closed ? null : hour.open_time,
+    close_time: hour.is_closed ? null : hour.close_time,
+  }))
+}
+
+/** True once the store has hours for all seven days. */
+export function hasFullWeekOfHours(hours: StoreOperatingHour[] | undefined): boolean {
+  return new Set((hours ?? []).map((hour) => hour.day_of_week)).size === DAYS_OF_WEEK.length
+}
+
+/**
+ * The week in a few lines, joining consecutive days with the same hours:
+ * ["Mon–Fri 8:00 AM – 5:00 PM", "Sat 9:00 AM – 1:00 PM", "Sun Closed"]. Days without hours read "Not set".
+ */
+export function summarizeOperatingHours(hours: StoreOperatingHour[] | undefined): OperatingHoursSummaryLine[] {
+  const byDay = new Map((hours ?? []).map((hour) => [hour.day_of_week, hour]))
+  const lines: (OperatingHoursSummaryLine & { firstDay: string })[] = []
+
+  for (const day of DAYS_OF_WEEK) {
+    const hour = byDay.get(day.value)
+    const isClosed = hour?.is_closed ?? false
+    const text = !hour
+      ? 'Not set'
+      : isClosed
+        ? 'Closed'
+        : `${formatStoreTime(hour.open_time)} – ${formatStoreTime(hour.close_time)}`
+
+    const previous = lines.at(-1)
+    if (previous && previous.hours === text) {
+      previous.days = `${previous.firstDay}–${day.shortLabel}`
+    } else {
+      lines.push({ days: day.shortLabel, hours: text, isClosed, firstDay: day.shortLabel })
+    }
+  }
+
+  return lines
+}
+
+/** One day in the form as text: "8:00 AM – 5:00 PM" or "Closed". */
+export function formatOperatingHourValue(hour: Pick<OperatingHourFormValue, 'is_closed' | 'open_time' | 'close_time'>): string {
+  if (hour.is_closed) return 'Closed'
+  return `${formatStoreTime(hour.open_time || null)} – ${formatStoreTime(hour.close_time || null)}`
+}
+
+/** True when the day's schedule differs from what's saved, comparing only what the API keeps. */
+export function isOperatingHourChanged(saved: OperatingHourFormValue | undefined, next: OperatingHourFormValue): boolean {
+  if (!saved) return true
+  if (saved.is_closed !== next.is_closed) return true
+  return !next.is_closed && (saved.open_time !== next.open_time || saved.close_time !== next.close_time)
 }

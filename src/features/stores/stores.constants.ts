@@ -1,4 +1,4 @@
-import type { StoreStatus } from './stores.types'
+import type { DayOfWeek, StoreStatus } from './stores.types'
 
 export const STORE_STATUS_LABELS: Record<StoreStatus, string> = {
   active: 'Active',
@@ -24,3 +24,23 @@ export const DEFAULT_STORES_PAGE_SIZE = 10
 export const STORES_CARD_LIST_STEP = 10
 /** The API's `per_page` limit (api-tool-kit's max_pagination_limit). */
 export const STORES_MAX_PAGE_SIZE = 100
+
+/** The week in the API's order (DayOfWeek enum, Monday = 1). */
+export const DAYS_OF_WEEK: readonly { value: DayOfWeek; label: string; shortLabel: string }[] = [
+  { value: 1, label: 'Monday', shortLabel: 'Mon' },
+  { value: 2, label: 'Tuesday', shortLabel: 'Tue' },
+  { value: 3, label: 'Wednesday', shortLabel: 'Wed' },
+  { value: 4, label: 'Thursday', shortLabel: 'Thu' },
+  { value: 5, label: 'Friday', shortLabel: 'Fri' },
+  { value: 6, label: 'Saturday', shortLabel: 'Sat' },
+  { value: 7, label: 'Sunday', shortLabel: 'Sun' },
+]
+
+/** Prefilled for days a store has no hours for yet, so a new schedule starts from something sensible. */
+export const DEFAULT_OPEN_TIME = '08:00'
+export const DEFAULT_CLOSE_TIME = '17:00'
+
+/** Keyboard shortcut on the Operating Hours page. Also shown in the UI as a hint. */
+export const OPERATING_HOURS_SHORTCUTS = {
+  search: 'Alt+S',
+} as const

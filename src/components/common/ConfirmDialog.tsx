@@ -28,6 +28,8 @@ interface ConfirmDialogProps {
   variant?: 'default' | 'destructive'
   /** Keeps the dialog open and disables its buttons while the action runs. */
   isLoading?: boolean
+  /** Disables the confirm button, e.g. until a choice in `children` is made. */
+  confirmDisabled?: boolean
   /** The caller closes the dialog (via `onOpenChange`) once the action succeeds. */
   onConfirm: () => void
   /** Extra content under the description, e.g. a list of what's about to change. */
@@ -44,6 +46,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   variant = 'default',
   isLoading = false,
+  confirmDisabled = false,
   onConfirm,
   children,
 }: ConfirmDialogProps) {
@@ -65,7 +68,7 @@ export function ConfirmDialog({
         <AlertDialogFooter className={MODAL_FOOTER_CLASS}>
           <AlertDialogCancel disabled={isLoading}>{cancelLabel}</AlertDialogCancel>
           {/* A plain button instead of AlertDialogAction, which would close the dialog before the action finishes. */}
-          <LoadingButton variant={variant} isLoading={isLoading} onClick={onConfirm}>
+          <LoadingButton variant={variant} isLoading={isLoading} disabled={confirmDisabled} onClick={onConfirm}>
             {confirmLabel}
           </LoadingButton>
         </AlertDialogFooter>

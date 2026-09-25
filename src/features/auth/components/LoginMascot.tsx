@@ -8,7 +8,11 @@ import {
   type MascotHandle,
 } from '@/components/common/Mascot'
 
-export type LoginField = 'username' | 'password'
+/**
+ * Which kind of field has focus: the username (the mascot follows its text), a password (it covers
+ * its eyes), or any other field (it looks down at the form).
+ */
+export type LoginField = 'username' | 'password' | 'other'
 
 interface LoginMascotProps {
   focusedField: LoginField | null
@@ -33,9 +37,9 @@ function gazeAtUsername(length: number): MascotDirection {
 }
 
 /**
- * A toaster that watches the sign-in form:
+ * A toaster that watches the sign-in and sign-up forms:
  * - follows the pointer while nothing is focused
- * - follows the text as the username is typed
+ * - follows the text as the username is typed, and looks at the form for other fields
  * - closes its eyes over a hidden password, and peeks when the password is shown
  */
 export function LoginMascot({ focusedField, usernameLength, isPasswordVisible, className, ref }: LoginMascotProps) {
@@ -44,6 +48,8 @@ export function LoginMascot({ focusedField, usernameLength, isPasswordVisible, c
 
   if (focusedField === 'username') {
     gaze = gazeAtUsername(usernameLength)
+  } else if (focusedField === 'other') {
+    gaze = 'down'
   } else if (focusedField === 'password') {
     if (isPasswordVisible) gaze = 'down'
     else expression = 'bashful'

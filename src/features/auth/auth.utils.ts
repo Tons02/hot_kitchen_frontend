@@ -1,6 +1,8 @@
-import type { Role, User } from '@/features/users/users.types'
+import { MOBILE_PREFIX } from '@/features/users/users.constants'
+import type { Gender, Role, User } from '@/features/users/users.types'
 import { STORAGE_KEYS } from '@/lib/constants'
-import type { AuthSession } from './auth.types'
+import type { RegisterFormValues } from './auth.schemas'
+import type { AuthSession, RegisterRequest } from './auth.types'
 
 /** UI-only check. The API is the source of truth for what a user may do. */
 export function hasRole(user: Pick<User, 'role'> | null, roles: readonly Role[]): boolean {
@@ -45,5 +47,36 @@ export function clearSession(): void {
     localStorage.removeItem(STORAGE_KEYS.session)
   } catch {
     // Storage is blocked, so there is nothing persisted to clear.
+  }
+}
+
+export const REGISTER_DEFAULTS: RegisterFormValues = {
+  first_name: '',
+  middle_name: '',
+  last_name: '',
+  suffix: '',
+  gender: '',
+  date_of_birth: '',
+  mobile_number: '',
+  email: '',
+  username: '',
+  password: '',
+  password_confirmation: '',
+}
+
+/** Converts validated sign-up values into the API payload. Only call with values that passed `registerSchema`. */
+export function toRegisterPayload(values: RegisterFormValues): RegisterRequest {
+  return {
+    first_name: values.first_name,
+    middle_name: values.middle_name || null,
+    last_name: values.last_name,
+    suffix: values.suffix || null,
+    gender: values.gender as Gender,
+    date_of_birth: values.date_of_birth,
+    mobile_number: `${MOBILE_PREFIX}${values.mobile_number}`,
+    username: values.username,
+    email: values.email,
+    password: values.password,
+    password_confirmation: values.password_confirmation,
   }
 }

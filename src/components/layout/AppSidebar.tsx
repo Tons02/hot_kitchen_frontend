@@ -32,7 +32,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link to={ROUTES.root}>
+              <Link to={ROUTES.dashboard}>
                 <AppLogoMark />
                 <span className="truncate font-heading font-semibold">{appConfig.name}</span>
               </Link>

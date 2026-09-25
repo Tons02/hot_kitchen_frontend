@@ -5,14 +5,15 @@ import { LoadingState } from '@/components/common/LoadingState'
 import { ModalContent, ModalHeader } from '@/components/common/Modal'
 import { Dialog } from '@/components/ui/dialog'
 import { isInlineApiError, normalizeApiError } from '@/services/api/apiError'
-import { useSaveStoreImages, type SaveStoreImagesResult } from '../hooks/useSaveStoreImages'
-import type { StoreBackgroundImage, StoreImageChanges, StoreImageStepStatus, StorePayload } from '../stores.types'
+import type { ImageSaveStatus, RunImageStepsResult } from '@/lib/layered-images'
+import { useSaveStoreImages } from '../hooks/useSaveStoreImages'
+import type { StoreBackgroundImage, StoreImageChanges, StorePayload } from '../stores.types'
 import { useCreateStoreMutation, useGetStoreQuery, useUpdateStoreMutation } from '../storesApi'
 import { StoreForm } from './StoreForm'
 
 export type StoreFormTarget = { mode: 'create' } | { mode: 'edit'; storeId: number }
 
-type ImageProgressHandler = (key: string, status: StoreImageStepStatus) => void
+type ImageProgressHandler = (key: string, status: ImageSaveStatus) => void
 
 interface StoreFormDialogProps {
   /** Kept after closing so the content doesn't blank out during the exit animation. */
@@ -22,7 +23,7 @@ interface StoreFormDialogProps {
 }
 
 /** Toasts the outcome once the store itself saved: all done, or stopped part-way through the images. */
-function toastSaveResult(storeName: string, successMessage: string, result: SaveStoreImagesResult) {
+function toastSaveResult(storeName: string, successMessage: string, result: RunImageStepsResult) {
   if (result.ok) {
     toast.success(successMessage)
     return

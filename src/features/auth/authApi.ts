@@ -1,5 +1,5 @@
 import { apiSlice } from '@/services/api/apiSlice'
-import type { LoginRequest, LoginResponse } from './auth.types'
+import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from './auth.types'
 import { loggedIn, loggedOut } from './authSlice'
 
 export const authApi = apiSlice.injectEndpoints({
@@ -7,6 +7,19 @@ export const authApi = apiSlice.injectEndpoints({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({ url: '/login', method: 'POST', body: credentials }),
       async onQueryStarted(_credentials, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(loggedIn({ token: data.token, user: data.data }))
+        } catch {
+          // The form that called the mutation renders the error.
+        }
+      },
+    }),
+
+    /** Creates a customer account. The API signs it in at once, so this stores the session like login. */
+    register: builder.mutation<RegisterResponse, RegisterRequest>({
+      query: (body) => ({ url: '/register', method: 'POST', body }),
+      async onQueryStarted(_body, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled
           dispatch(loggedIn({ token: data.token, user: data.data }))
@@ -31,4 +44,4 @@ export const authApi = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useLoginMutation, useLogoutMutation } = authApi
+export const { useLoginMutation, useRegisterMutation, useLogoutMutation } = authApi

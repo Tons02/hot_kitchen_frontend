@@ -5,19 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sortable, SortableContent, SortableItem, SortableItemHandle, SortableOverlay } from '@/components/ui/sortable'
 import { useFilePreview } from '@/hooks/use-file-preview'
+import { toNewLayeredImageDraft, type ImageSaveProgress, type LayeredImageDraft } from '@/lib/layered-images'
 import { cn } from '@/lib/utils'
-import { STORE_IMAGE_TYPES } from '../stores.constants'
-import type { BackgroundImageDraft, StoreSaveProgress } from '../stores.types'
-import { toNewBackgroundImageDraft } from '../stores.utils'
 import { ImageStepStatus } from './ImageStepStatus'
 
-const ACCEPT = STORE_IMAGE_TYPES.join(',')
-
-interface BackgroundImagesInputProps {
-  value: BackgroundImageDraft[]
-  onChange: (drafts: BackgroundImageDraft[]) => void
+interface LayeredImagesInputProps {
+  value: LayeredImageDraft[]
+  onChange: (drafts: LayeredImageDraft[]) => void
+  /** The file types the pickers offer, e.g. "image/png,image/jpeg". */
+  accept: string
+  /** What one image is called in labels, e.g. "background image" → "Remove background image 2". */
+  itemLabel?: string
   /** Each image's status while the form saves. */
-  progress?: StoreSaveProgress
+  progress?: ImageSaveProgress
   id?: string
   name?: string
   onBlur?: () => void
@@ -28,12 +28,14 @@ interface BackgroundImagesInputProps {
 }
 
 /**
- * The store's background images in display order. Adding, replacing, removing and reordering
+ * An ordered image gallery (see `lib/layered-images.ts`). Adding, replacing, removing and reordering
  * only change the form; the form's save sends them to the API.
  */
-export function BackgroundImagesInput({
+export function LayeredImagesInput({
   value,
   onChange,
+  accept,
+  itemLabel = 'image',
   progress,
   id,
   name,
@@ -41,7 +43,7 @@ export function BackgroundImagesInput({
   ref,
   disabled,
   ...ariaProps
-}: BackgroundImagesInputProps) {
+}: LayeredImagesInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<ImagePreview | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -63,16 +65,18 @@ export function BackgroundImagesInput({
           <SortableContent asChild>
             <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {value.map((draft, index) => (
-                <BackgroundImageTile
+                <LayeredImageTile
                   key={draft.key}
                   draft={draft}
                   position={index + 1}
+                  accept={accept}
+                  label={`${itemLabel} ${index + 1}`}
                   status={progress?.[draft.key]}
                   disabled={disabled}
                   onReplace={(file) => replaceAt(index, file)}
                   onRemove={() => onChange(value.filter((_, i) => i !== index))}
                   onPreview={(src) => {
-                    setPreview({ src, title: `Background image ${index + 1}` })
+                    setPreview({ src, title: capitalize(`${itemLabel} ${index + 1}`) })
                     setIsPreviewOpen(true)
                   }}
                 />
@@ -106,13 +110,13 @@ export function BackgroundImagesInput({
         ref={inputRef}
         type="file"
         name={name}
-        accept={ACCEPT}
+        accept={accept}
         multiple
         hidden
         tabIndex={-1}
         onChange={(event) => {
           const files = Array.from(event.target.files ?? [])
-          if (files.length > 0) onChange([...value, ...files.map(toNewBackgroundImageDraft)])
+          if (files.length > 0) onChange([...value, ...files.map(toNewLayeredImageDraft)])
           // Reset so choosing the same file again still fires a change.
           event.target.value = ''
         }}
@@ -123,16 +127,18 @@ export function BackgroundImagesInput({
   )
 }
 
-const getDraftKey = (draft: BackgroundImageDraft) => draft.key
+const getDraftKey = (draft: LayeredImageDraft) => draft.key
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 /** What the draft will show once saved: its new or replacement file, else the saved image. */
-function useDraftSrc(draft: BackgroundImageDraft): string | undefined {
+function useDraftSrc(draft: LayeredImageDraft): string | undefined {
   const filePreview = useFilePreview(draft.kind === 'new' ? draft.file : draft.replacement)
   return filePreview ?? (draft.kind === 'existing' ? draft.url : undefined)
 }
 
 /** The image alone, following the pointer while a tile is dragged. */
-function DraftThumbnail({ draft, className }: { draft: BackgroundImageDraft; className?: string }) {
+function DraftThumbnail({ draft, className }: { draft: LayeredImageDraft; className?: string }) {
   const src = useDraftSrc(draft)
   return (
     <div className={cn('aspect-video overflow-hidden bg-muted', className)}>
@@ -141,28 +147,32 @@ function DraftThumbnail({ draft, className }: { draft: BackgroundImageDraft; cla
   )
 }
 
-interface BackgroundImageTileProps {
-  draft: BackgroundImageDraft
+interface LayeredImageTileProps {
+  draft: LayeredImageDraft
   position: number
-  status: StoreSaveProgress[string] | undefined
+  accept: string
+  /** e.g. "background image 2", for the buttons' labels. */
+  label: string
+  status: ImageSaveProgress[string] | undefined
   disabled?: boolean
   onReplace: (file: File) => void
   onRemove: () => void
   onPreview: (src: string) => void
 }
 
-function BackgroundImageTile({
+function LayeredImageTile({
   draft,
   position,
+  accept,
+  label,
   status,
   disabled,
   onReplace,
   onRemove,
   onPreview,
-}: BackgroundImageTileProps) {
+}: LayeredImageTileProps) {
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const src = useDraftSrc(draft)
-  const label = `background image ${position}`
 
   return (
     <SortableItem value={draft.key} asChild>
@@ -223,7 +233,7 @@ function BackgroundImageTile({
         <input
           ref={replaceInputRef}
           type="file"
-          accept={ACCEPT}
+          accept={accept}
           hidden
           tabIndex={-1}
           onChange={(event) => {

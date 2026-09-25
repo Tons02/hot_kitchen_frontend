@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useStoreOptions } from '@/features/stores/hooks/useStoreOptions'
+import { StoreCombobox } from '@/features/stores/components/StoreCombobox'
 import { DEFAULT_USER_FILTERS, ROLE_LABELS, STAFF_ROLES, USER_SHORTCUTS } from '../users.constants'
 import type { UserFilterValues, UserListView } from '../users.types'
 import { countActiveFilters } from '../users.utils'
@@ -37,7 +37,6 @@ interface UserToolbarProps {
 
 /** Search (on Enter) and a filter popover whose choices only apply when you press Apply. */
 export function UserToolbar({ view, search, onSearch, filters, onFiltersChange, searchRef }: UserToolbarProps) {
-  const { options: storeOptions } = useStoreOptions()
   const [isOpen, setIsOpen] = useState(false)
   const [draft, setDraft] = useState(filters)
   const activeCount = countActiveFilters(filters, view)
@@ -98,11 +97,11 @@ export function UserToolbar({ view, search, onSearch, filters, onFiltersChange, 
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="user-filter-store">Store</FieldLabel>
-                  <SelectInput
+                  <StoreCombobox
                     id="user-filter-store"
                     value={draft.storeId}
                     onChange={(storeId) => setDraftField({ storeId })}
-                    options={[{ value: 'all', label: 'All stores' }, ...storeOptions]}
+                    allLabel="All stores"
                   />
                 </Field>
                 {view === 'current' && (

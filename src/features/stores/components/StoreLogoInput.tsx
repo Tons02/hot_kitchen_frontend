@@ -1,12 +1,12 @@
 import { StoreIcon } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { FileInput } from '@/components/common/FileInput'
+import { ImageStepStatus } from '@/components/common/ImageStepStatus'
 import { ImagePreviewDialog, type ImagePreview } from '@/components/common/ImagePreviewDialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useFilePreview } from '@/hooks/use-file-preview'
+import type { ImageSaveStatus } from '@/lib/layered-images'
 import { STORE_IMAGE_TYPES } from '../stores.constants'
-import type { StoreImageStepStatus } from '../stores.types'
-import { ImageStepStatus } from './ImageStepStatus'
 
 type StoreLogoInputProps = Omit<ComponentProps<typeof FileInput>, 'accept' | 'placeholder'> & {
   /** The logo already on record, when editing. */
@@ -14,7 +14,7 @@ type StoreLogoInputProps = Omit<ComponentProps<typeof FileInput>, 'accept' | 'pl
   /** Shown when there's no logo to display. */
   initials: string
   /** The logo's upload status while the form saves. */
-  status?: StoreImageStepStatus
+  status?: ImageSaveStatus
 }
 
 /** Preview of the chosen (or current) logo, next to the file picker. Click the preview to enlarge it. */

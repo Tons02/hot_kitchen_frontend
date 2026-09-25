@@ -1,10 +1,10 @@
 import { CircleAlertIcon, CircleCheckIcon, ClockIcon } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
-import type { StoreImageStepStatus } from '../stores.types'
+import type { ImageSaveStatus } from '@/lib/layered-images'
 
 /** Covers an image while the form saves it: waiting, uploading, saved or failed. */
-export function ImageStepStatus({ status }: { status: StoreImageStepStatus | undefined }) {
+export function ImageStepStatus({ status }: { status: ImageSaveStatus | undefined }) {
   if (!status) return null
 
   if (status === 'working') {

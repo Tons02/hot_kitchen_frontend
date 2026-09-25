@@ -1,19 +1,11 @@
-import { array, mixed, object, string, type InferType } from 'yup'
+import { array, boolean, mixed, number, object, string, type InferType } from 'yup'
+import { getLayeredImageDraftFiles, type LayeredImageDraft } from '@/lib/layered-images'
 import { MAX_STORE_IMAGE_BYTES, STORE_IMAGE_TYPES } from './stores.constants'
-import type { BackgroundImageDraft } from './stores.types'
 
 const IMAGE_TYPE_MESSAGE = 'Choose a PNG, JPG or WebP image.'
 const IMAGE_SIZE_MESSAGE = 'Choose an image of 10 MB or less.'
 
 const isAllowedImage = (file: File) => (STORE_IMAGE_TYPES as readonly string[]).includes(file.type)
-
-/** The files the drafts would upload: new images and replacements. */
-function getDraftFiles(drafts: BackgroundImageDraft[]): File[] {
-  return drafts.flatMap((draft) => {
-    if (draft.kind === 'new') return [draft.file]
-    return draft.replacement ? [draft.replacement] : []
-  })
-}
 
 function coordinate(label: string, limit: number) {
   return string()
@@ -35,13 +27,13 @@ export const storeSchema = object({
     .default(null)
     .test('file-type', IMAGE_TYPE_MESSAGE, (file) => !file || isAllowedImage(file))
     .test('file-size', IMAGE_SIZE_MESSAGE, (file) => !file || file.size <= MAX_STORE_IMAGE_BYTES),
-  background_images: array(mixed<BackgroundImageDraft>().required())
+  background_images: array(mixed<LayeredImageDraft>().required())
     .default([])
-    .test('file-type', IMAGE_TYPE_MESSAGE, (drafts) => !drafts || getDraftFiles(drafts).every(isAllowedImage))
+    .test('file-type', IMAGE_TYPE_MESSAGE, (drafts) => !drafts || getLayeredImageDraftFiles(drafts).every(isAllowedImage))
     .test(
       'file-size',
       IMAGE_SIZE_MESSAGE,
-      (drafts) => !drafts || getDraftFiles(drafts).every((file) => file.size <= MAX_STORE_IMAGE_BYTES),
+      (drafts) => !drafts || getLayeredImageDraftFiles(drafts).every((file) => file.size <= MAX_STORE_IMAGE_BYTES),
     ),
   code: string().trim().required('Enter a store code.').max(50, 'Keep the code under 50 characters.'),
   name: string().trim().required('Enter the store name.').max(255, 'Keep it under 255 characters.'),
@@ -66,3 +58,39 @@ export const storeSchema = object({
 })
 
 export type StoreFormValues = InferType<typeof storeSchema>
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/** One day of the week. Times are "HH:mm" (what <input type="time"> gives) and only checked when open. */
+const operatingHourSchema = object({
+  day_of_week: number().required(),
+  is_closed: boolean().required(),
+  open_time: string()
+    .default('')
+    .when('is_closed', {
+      is: false,
+      then: (schema) => schema.required('Enter an opening time.').matches(TIME_PATTERN, 'Enter a valid time.'),
+    }),
+  close_time: string()
+    .default('')
+    .when('is_closed', {
+      is: false,
+      then: (schema) =>
+        schema
+          .required('Enter a closing time.')
+          .matches(TIME_PATTERN, 'Enter a valid time.')
+          // "HH:mm" strings sort the same way as the times they stand for.
+          .test('after-open', 'Close after the opening time.', function (close) {
+            const open: unknown = this.parent.open_time
+            return typeof open !== 'string' || !TIME_PATTERN.test(open) || !close || close > open
+          }),
+    }),
+})
+
+/** Mirrors the API's StoreOperatingHoursRequest: all seven days, open before close unless closed. */
+export const operatingHoursSchema = object({
+  operating_hours: array(operatingHourSchema).length(7).required(),
+})
+
+export type OperatingHoursFormValues = InferType<typeof operatingHoursSchema>
+export type OperatingHourFormValue = OperatingHoursFormValues['operating_hours'][number]

@@ -4,6 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { FormErrorAlert } from '@/components/common/FormErrorAlert'
 import { FormField } from '@/components/common/FormField'
 import { FormSection } from '@/components/common/FormSection'
+import { LayeredImagesInput } from '@/components/common/LayeredImagesInput'
 import { LoadingButton } from '@/components/common/LoadingButton'
 import { ModalBody, ModalFooter } from '@/components/common/Modal'
 import { Button } from '@/components/ui/button'
@@ -14,15 +15,14 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/
 import { Textarea } from '@/components/ui/textarea'
 import { useSingleFlight } from '@/hooks/use-single-flight'
 import { applyServerErrors } from '@/lib/form'
-import { MOBILE_PREFIX } from '../stores.constants'
+import type { ImageSaveProgress, ImageSaveStatus } from '@/lib/layered-images'
+import { MOBILE_PREFIX, STORE_IMAGE_TYPES } from '../stores.constants'
 import { storeSchema, type StoreFormValues } from '../stores.schemas'
 import type {
   Store,
   StoreBackgroundImage,
   StoreImageChanges,
-  StoreImageStepStatus,
   StorePayload,
-  StoreSaveProgress,
 } from '../stores.types'
 import {
   getStoreFormDefaults,
@@ -31,7 +31,6 @@ import {
   toStoreImageChanges,
   toStorePayload,
 } from '../stores.utils'
-import { BackgroundImagesInput } from './BackgroundImagesInput'
 import { StoreLogoInput } from './StoreLogoInput'
 import { StoreSaveConfirmDialog } from './StoreSaveConfirmDialog'
 
@@ -49,7 +48,7 @@ interface StoreFormProps {
   onSubmit: (
     payload: StorePayload,
     images: StoreImageChanges,
-    onImageProgress: (key: string, status: StoreImageStepStatus) => void,
+    onImageProgress: (key: string, status: ImageSaveStatus) => void,
   ) => Promise<unknown>
   /** True while a save is running, so the dialog can refuse to close. */
   onSavingChange: (isSaving: boolean) => void
@@ -71,7 +70,7 @@ export function StoreForm({ store, submitLabel, onSubmit, onSavingChange }: Stor
   const [pendingValues, setPendingValues] = useState<StoreFormValues | null>(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [progress, setProgress] = useState<StoreSaveProgress>({})
+  const [progress, setProgress] = useState<ImageSaveProgress>({})
 
   const savedImages = store?.background_images ?? NO_IMAGES
   const summary = pendingValues ? summarizeStoreImageChanges(savedImages, toStoreImageChanges(pendingValues)) : null
@@ -176,7 +175,14 @@ export function StoreForm({ store, submitLabel, onSubmit, onSavingChange }: Stor
               label="Background images"
               optional
               description="PNG, JPG or WebP, up to 10 MB each. Shown in this order; use the arrows to reorder. Changes are saved when you save the store."
-              render={(field) => <BackgroundImagesInput {...field} progress={progress} />}
+              render={(field) => (
+                <LayeredImagesInput
+                  {...field}
+                  accept={STORE_IMAGE_TYPES.join(',')}
+                  itemLabel="background image"
+                  progress={progress}
+                />
+              )}
             />
           </FormSection>
 

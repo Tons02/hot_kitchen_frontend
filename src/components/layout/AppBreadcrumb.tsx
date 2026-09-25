@@ -13,8 +13,10 @@ import type { RouteHandle } from '@/types/router'
 /** Built from the `handle.breadcrumb` of every matched route. */
 export function AppBreadcrumb() {
   const crumbs = useMatches().flatMap((match) => {
-    const label = (match.handle as RouteHandle | undefined)?.breadcrumb
-    return label ? [{ id: match.id, label, to: match.pathname }] : []
+    const Label = (match.handle as RouteHandle | undefined)?.breadcrumb
+    if (!Label) return []
+    const label = typeof Label === 'string' ? Label : <Label params={match.params} />
+    return [{ id: match.id, label, to: match.pathname }]
   })
 
   if (crumbs.length === 0) return null
